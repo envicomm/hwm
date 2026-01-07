@@ -1,0 +1,10 @@
+{
+  "extends": "@hwm/typescript-config/react-app.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src/**/*", "vite.config.ts"]
+}

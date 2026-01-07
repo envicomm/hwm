@@ -1,0 +1,42 @@
+# Dependencies
+node_modules
+
+# Build outputs
+dist
+dist-ssr
+.output
+.vinxi
+.nitro
+.wrangler
+
+# TanStack
+.tanstack
+
+# Turbo
+.turbo
+
+# Environment files
+.env
+.env.local
+.env.*.local
+*.local
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+# System
+.DS_Store
+*.log
+*.tsbuildinfo
+
+# Generated files
+**/routeTree.gen.ts
+
+# Convex
+packages/convex/convex/_generated
+
+# Misc
+count.txt
+todos.json

@@ -1,0 +1,14 @@
+{
+  "name": "@hwm/typescript-config",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    "./base.json": "./base.json",
+    "./react-app.json": "./react-app.json",
+    "./library.json": "./library.json"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "@hwm/convex",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "convex dev",
+    "deploy": "convex deploy",
+    "typecheck": "tsc --noEmit"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./convex/*"
+  },
+  "dependencies": {
+    "convex": "^1.22.0"
+  },
+  "devDependencies": {
+    "@hwm/typescript-config": "workspace:*",
+    "typescript": "^5.7.2"
+  }
+}
