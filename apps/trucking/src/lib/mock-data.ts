@@ -1,20 +1,21 @@
-// Types matching Convex schema
-export type CollectionRequestStatus =
-  | "pending"
-  | "assigned"
-  | "in_progress"
-  | "completed"
-  | "cancelled";
+// Types from @hwm/types
+import type {
+  CollectionRequestStatus,
+  DisposalBatchStatus,
+  DriverStatus,
+  ActivityType,
+} from "@hwm/types/enums";
+import type { Location } from "@hwm/types/entities";
+import {
+  collectionStatusColors,
+  disposalStatusColors,
+  driverStatusColors,
+} from "@hwm/types/labels";
 
-export type DisposalBatchStatus =
-  | "aggregating"
-  | "sealed"
-  | "disposal_requested"
-  | "in_transit"
-  | "disposed";
+export type { CollectionRequestStatus, DisposalBatchStatus, DriverStatus, ActivityType };
+export { collectionStatusColors, disposalStatusColors, driverStatusColors };
 
-export type DriverStatus = "available" | "on_route" | "returning" | "off_duty";
-
+// Trucking-specific driver with lastUpdated field
 export interface Driver {
   id: string;
   name: string;
@@ -23,8 +24,10 @@ export interface Driver {
   currentRouteId?: string;
   vehiclePlate: string;
   completedToday: number;
+  lastUpdated: number;
 }
 
+// Trucking-specific collection request with extended fields
 export interface CollectionRequest {
   id: string;
   generatorId: string;
@@ -41,6 +44,7 @@ export interface CollectionRequest {
   createdAt: number;
 }
 
+// Trucking-specific disposal batch
 export interface DisposalBatch {
   id: string;
   treaterId: string;
@@ -56,6 +60,7 @@ export interface DisposalBatch {
   createdAt: number;
 }
 
+// Trucking-specific hauler
 export interface Hauler {
   id: string;
   name: string;
@@ -63,6 +68,10 @@ export interface Hauler {
   contactEmail: string;
   contactPhone: string;
   licenseNumber: string;
+  location?: Location;
+  serviceArea?: {
+    cities: string[];
+  };
 }
 
 // Mock hauler
@@ -73,6 +82,13 @@ export const mockHauler: Hauler = {
   contactEmail: "dispatch@metromanilahaul.com",
   contactPhone: "+63 2 8888 1234",
   licenseNumber: "MMHS-2024-0892",
+  location: {
+    lat: 14.5764,
+    lng: 121.0851,
+  },
+  serviceArea: {
+    cities: ["makati", "taguig", "pasig", "mandaluyong", "quezon_city"],
+  },
 };
 
 // Mock drivers
@@ -85,6 +101,7 @@ export const mockDrivers: Driver[] = [
     currentRouteId: "route_001",
     vehiclePlate: "ABC 1234",
     completedToday: 3,
+    lastUpdated: Date.now() - 12 * 60 * 1000, // 12 min ago
   },
   {
     id: "drv_002",
@@ -94,6 +111,7 @@ export const mockDrivers: Driver[] = [
     currentRouteId: "route_002",
     vehiclePlate: "DEF 5678",
     completedToday: 2,
+    lastUpdated: Date.now() - 25 * 60 * 1000, // 25 min ago
   },
   {
     id: "drv_003",
@@ -102,6 +120,7 @@ export const mockDrivers: Driver[] = [
     status: "available",
     vehiclePlate: "GHI 9012",
     completedToday: 4,
+    lastUpdated: Date.now() - 45 * 60 * 1000, // 45 min ago
   },
   {
     id: "drv_004",
@@ -110,6 +129,7 @@ export const mockDrivers: Driver[] = [
     status: "returning",
     vehiclePlate: "JKL 3456",
     completedToday: 3,
+    lastUpdated: Date.now() - 8 * 60 * 1000, // 8 min ago
   },
   {
     id: "drv_005",
@@ -118,6 +138,7 @@ export const mockDrivers: Driver[] = [
     status: "available",
     vehiclePlate: "MNO 7890",
     completedToday: 5,
+    lastUpdated: Date.now() - 2 * 60 * 60 * 1000, // 2 hours ago
   },
   {
     id: "drv_006",
@@ -126,6 +147,7 @@ export const mockDrivers: Driver[] = [
     status: "off_duty",
     vehiclePlate: "PQR 1234",
     completedToday: 0,
+    lastUpdated: Date.now() - 8 * 60 * 60 * 1000, // 8 hours ago
   },
 ];
 
@@ -458,40 +480,8 @@ export function getWeeklyActivityData() {
   }));
 }
 
-// For charts - status colors
-export const collectionStatusColors: Record<CollectionRequestStatus, string> = {
-  pending: "#f59e0b",
-  assigned: "#3b82f6",
-  in_progress: "#8b5cf6",
-  completed: "#10b981",
-  cancelled: "#6b7280",
-};
-
-export const disposalStatusColors: Record<DisposalBatchStatus, string> = {
-  aggregating: "#f59e0b",
-  sealed: "#3b82f6",
-  disposal_requested: "#8b5cf6",
-  in_transit: "#ec4899",
-  disposed: "#10b981",
-};
-
-export const driverStatusColors: Record<DriverStatus, string> = {
-  available: "#10b981",
-  on_route: "#3b82f6",
-  returning: "#f59e0b",
-  off_duty: "#6b7280",
-};
-
-// Activity types for timeline
-export type ActivityType =
-  | "collection_assigned"
-  | "collection_started"
-  | "collection_completed"
-  | "disposal_started"
-  | "disposal_completed"
-  | "driver_available";
-
-export interface ActivityItem {
+// Trucking-specific activity item (extends base)
+interface TruckingActivityItem {
   id: string;
   type: ActivityType;
   description: string;
@@ -501,8 +491,8 @@ export interface ActivityItem {
 }
 
 // Generate recent activities from mock data
-export function getRecentActivities(limit = 6): ActivityItem[] {
-  const activities: ActivityItem[] = [];
+export function getRecentActivities(limit = 6): TruckingActivityItem[] {
+  const activities: TruckingActivityItem[] = [];
   const now = Date.now();
 
   // Add activities from collection requests

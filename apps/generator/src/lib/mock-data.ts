@@ -1,29 +1,41 @@
-export type WasteStatus =
-  | "initialized"
-  | "to_be_collected"
-  | "collected"
-  | "treated"
-  | "aggregated"
-  | "disposal_requested"
-  | "disposed";
+import type {
+  WasteStatus,
+  WasteType,
+  CollectionRequestStatus,
+  QrMode,
+} from "@hwm/types/enums";
+import type {
+  MockWasteBag,
+  MockCollectionRequest,
+  MockGenerator,
+  MockBagDistribution,
+  MockBagInventory,
+  MockRouteStop,
+  MockCollectionRoute,
+  DailyWasteData,
+  DailyWasteTypeData,
+  ActivityItem,
+} from "@hwm/types/mock";
+import {
+  statusLabels,
+  typeLabels,
+  collectionRequestStatusLabels,
+} from "@hwm/types/labels";
 
-export type WasteType =
-  | "infectious"
-  | "sharps"
-  | "pharmaceutical"
-  | "pathological"
-  | "chemical";
-
-export interface MockWasteBag {
-  id: string;
-  qrCode: string;
-  wasteType: WasteType;
-  status: WasteStatus;
-  weightKg: number | null;
-  description: string | null;
-  createdAt: number;
-  updatedAt: number;
-}
+export type { WasteStatus, WasteType, CollectionRequestStatus, QrMode };
+export type {
+  MockWasteBag,
+  MockCollectionRequest,
+  MockGenerator,
+  MockBagDistribution,
+  MockBagInventory,
+  MockRouteStop,
+  MockCollectionRoute,
+  DailyWasteData,
+  DailyWasteTypeData,
+  ActivityItem,
+};
+export { statusLabels, typeLabels, collectionRequestStatusLabels };
 
 const wasteTypes: WasteType[] = [
   "infectious",
@@ -156,33 +168,8 @@ export function getRecentActivityCount(bags: MockWasteBag[], days: number = 7): 
   return bags.filter((bag) => bag.createdAt >= cutoff).length;
 }
 
-export const statusLabels: Record<WasteStatus, string> = {
-  initialized: "Initialized",
-  to_be_collected: "To Be Collected",
-  collected: "Collected",
-  treated: "Treated",
-  aggregated: "Aggregated",
-  disposal_requested: "Disposal Requested",
-  disposed: "Disposed",
-};
-
-export const typeLabels: Record<WasteType, string> = {
-  infectious: "Infectious",
-  sharps: "Sharps",
-  pharmaceutical: "Pharmaceutical",
-  pathological: "Pathological",
-  chemical: "Chemical",
-};
-
-// Collection request mock data
-export type CollectionRequestStatus =
-  | "pending"
-  | "assigned"
-  | "in_progress"
-  | "completed"
-  | "cancelled";
-
-export interface MockCollectionRequest {
+// Local interface extending MockCollectionRequest for generator-specific fields
+interface GeneratorMockCollectionRequest {
   id: string;
   status: CollectionRequestStatus;
   bagCount: number;
@@ -191,8 +178,8 @@ export interface MockCollectionRequest {
   completedAt: number | null;
 }
 
-function generateMockCollectionRequests(count: number): MockCollectionRequest[] {
-  const requests: MockCollectionRequest[] = [];
+function generateMockCollectionRequests(count: number): GeneratorMockCollectionRequest[] {
+  const requests: GeneratorMockCollectionRequest[] = [];
   const now = Date.now();
   const dayMs = 24 * 60 * 60 * 1000;
   const requestStatuses: CollectionRequestStatus[] = [
@@ -230,7 +217,7 @@ function generateMockCollectionRequests(count: number): MockCollectionRequest[] 
 export const mockCollectionRequests = generateMockCollectionRequests(12);
 
 export function getCollectionRequestStatusCounts(
-  requests: MockCollectionRequest[]
+  requests: GeneratorMockCollectionRequest[]
 ): Record<CollectionRequestStatus, number> {
   const counts: Record<CollectionRequestStatus, number> = {
     pending: 0,
@@ -248,12 +235,6 @@ export function getCollectionRequestStatusCounts(
 }
 
 // Time-series data helpers
-export interface DailyWasteData {
-  date: string;
-  count: number;
-  weight: number;
-}
-
 export function getDailyWasteData(
   bags: MockWasteBag[],
   days: number = 14
@@ -289,25 +270,61 @@ export function getDailyWasteData(
   return result;
 }
 
-// Activity feed data
-export interface ActivityItem {
-  id: string;
-  type: "bag_created" | "bag_collected" | "bag_treated" | "bag_disposed" | "request_created";
-  description: string;
-  timestamp: number;
-  wasteType?: WasteType;
-  status?: WasteStatus;
+// Mock personnel for activity updates
+const mockPersonnel = {
+  nurses: [
+    { name: "Maria Santos", role: "nurse" as const },
+    { name: "Juan Cruz", role: "nurse" as const },
+    { name: "Ana Reyes", role: "nurse" as const },
+  ],
+  staff: [
+    { name: "Pedro Garcia", role: "staff" as const },
+    { name: "Rosa Lim", role: "staff" as const },
+  ],
+  drivers: [
+    { name: "Miguel Torres", role: "driver" as const },
+    { name: "Carlos Mendoza", role: "driver" as const },
+  ],
+  treaters: [
+    { name: "EcoWaste Solutions", role: "treater" as const },
+    { name: "Green Treatment Inc", role: "treater" as const },
+  ],
+};
+
+// Mock locations within the hospital
+const hospitalLocations = [
+  "Emergency Room",
+  "ICU Ward",
+  "Operating Room 1",
+  "Operating Room 2",
+  "Laboratory",
+  "Pharmacy",
+  "Radiology",
+  "Pediatric Ward",
+  "Maternity Ward",
+  "Outpatient Clinic",
+];
+
+function getRandomPerson(type: keyof typeof mockPersonnel) {
+  const people = mockPersonnel[type];
+  return people[Math.floor(Math.random() * people.length)];
+}
+
+function getRandomLocation(): string {
+  const index = Math.floor(Math.random() * hospitalLocations.length);
+  return hospitalLocations[index] ?? "Unknown Location";
 }
 
 export function getRecentActivity(
   bags: MockWasteBag[],
-  requests: MockCollectionRequest[],
+  requests: GeneratorMockCollectionRequest[],
   limit: number = 8
 ): ActivityItem[] {
   const activities: ActivityItem[] = [];
 
   // Add bag creation activities
   for (const bag of bags) {
+    const location = getRandomLocation();
     activities.push({
       id: `activity_${bag.id}`,
       type: "bag_created",
@@ -315,11 +332,21 @@ export function getRecentActivity(
       timestamp: bag.createdAt,
       wasteType: bag.wasteType,
       status: bag.status,
+      weightKg: bag.weightKg,
+      location,
+      updatedBy: getRandomPerson("nurses"),
+      bagId: bag.id,
     });
 
     // Add status-based activities
     if (bag.status === "collected" || bag.status === "treated" || bag.status === "disposed") {
       const statusTime = bag.updatedAt;
+      const updatedBy = bag.status === "collected"
+        ? getRandomPerson("drivers")
+        : bag.status === "treated"
+          ? getRandomPerson("treaters")
+          : getRandomPerson("treaters");
+
       activities.push({
         id: `activity_status_${bag.id}`,
         type:
@@ -332,6 +359,10 @@ export function getRecentActivity(
         timestamp: statusTime,
         wasteType: bag.wasteType,
         status: bag.status,
+        weightKg: bag.weightKg,
+        location: bag.status === "collected" ? location : undefined,
+        updatedBy,
+        bagId: bag.id,
       });
     }
   }
@@ -343,6 +374,7 @@ export function getRecentActivity(
       type: "request_created",
       description: `Collection request for ${request.bagCount} bag${request.bagCount > 1 ? "s" : ""}`,
       timestamp: request.requestedAt,
+      updatedBy: getRandomPerson("staff"),
     });
   }
 
@@ -351,26 +383,7 @@ export function getRecentActivity(
     .slice(0, limit);
 }
 
-export const collectionRequestStatusLabels: Record<CollectionRequestStatus, string> = {
-  pending: "Pending",
-  assigned: "Assigned",
-  in_progress: "In Progress",
-  completed: "Completed",
-  cancelled: "Cancelled",
-};
-
-// ===== NEW: Generator Storage Capacity =====
-export interface MockGenerator {
-  id: string;
-  name: string;
-  address: string;
-  maxStorageCapacityKg: number;
-  maxBagCount: number;
-  storageAlertThreshold: number;
-  location: { lat: number; lng: number };
-  qrMode: "pre_manufactured" | "hospital_generated" | "both";
-}
-
+// ===== Generator Storage Capacity =====
 // Metro Manila coordinates - centered around Makati
 export const mockGenerator: MockGenerator = {
   id: "gen_hospital_001",
@@ -398,20 +411,7 @@ export function getStorageStats(bags: MockWasteBag[]): {
   };
 }
 
-// ===== NEW: Bag Inventory =====
-export interface MockBagDistribution {
-  id: string;
-  quantity: number;
-  shippedAt: number;
-  receivedAt?: number;
-  status: "pending" | "shipped" | "received" | "partial";
-}
-
-export interface MockBagInventory {
-  availableBags: number;
-  recentDistributions: MockBagDistribution[];
-}
-
+// ===== Bag Inventory =====
 function generateMockBagDistributions(): MockBagDistribution[] {
   const now = Date.now();
   const dayMs = 24 * 60 * 60 * 1000;
@@ -446,24 +446,7 @@ export const mockBagInventory: MockBagInventory = {
   recentDistributions: generateMockBagDistributions(),
 };
 
-// ===== NEW: Collection Route =====
-export interface MockRouteStop {
-  id: string;
-  name: string;
-  location: { lat: number; lng: number };
-  order: number;
-  isCurrentGenerator?: boolean;
-}
-
-export interface MockCollectionRoute {
-  routeGroupId: string;
-  stops: MockRouteStop[];
-  driverLocation: { lat: number; lng: number } | null;
-  estimatedArrival: Date | null;
-  currentStopIndex: number;
-  hasActiveCollection: boolean;
-}
-
+// ===== Collection Route =====
 // Generate a realistic route with multiple hospital stops in Metro Manila
 export const mockCollectionRoute: MockCollectionRoute = {
   routeGroupId: "route_001",
@@ -582,16 +565,6 @@ export function getAvgPickupTime(bags: MockWasteBag[]): {
 /**
  * Get daily waste type breakdown for the past N days
  */
-export interface DailyWasteTypeData {
-  date: string;
-  dayIndex: number;
-  infectious: number;
-  sharps: number;
-  pharmaceutical: number;
-  pathological: number;
-  chemical: number;
-}
-
 export function getWeeklyWasteTypeData(
   bags: MockWasteBag[],
   days: number = 7

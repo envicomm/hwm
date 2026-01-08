@@ -6,25 +6,11 @@ import {
   useEffect,
   type ReactNode,
 } from "react";
+import type { TruckingUser, AuthContextType } from "@hwm/types/auth";
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: "hauler" | "driver";
-  haulerId: string;
-  haulerName: string;
-}
+type User = TruckingUser;
 
-interface AuthContextValue {
-  user: User | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
-  logout: () => void;
-}
-
-const AuthContext = createContext<AuthContextValue | null>(null);
+const AuthContext = createContext<AuthContextType<User> | null>(null);
 
 const STORAGE_KEY = "hwm_trucking_auth";
 

@@ -1,23 +1,19 @@
 // ===== Types =====
-export type WasteStatus =
-  | "initialized"
-  | "to_be_collected"
-  | "collected"
-  | "treated"
-  | "aggregated"
-  | "disposal_requested"
-  | "disposed";
+import type { WasteStatus, WasteType, QrMode, CollectionRequestStatus } from "@hwm/types/enums";
+import type { MockWasteBag } from "@hwm/types/mock";
+import {
+  statusLabels,
+  statusColors,
+  typeLabels,
+  qrModeLabels,
+} from "@hwm/types/labels";
 
-export type WasteType =
-  | "infectious"
-  | "sharps"
-  | "pharmaceutical"
-  | "pathological"
-  | "chemical";
+export type { WasteStatus, WasteType, QrMode, CollectionRequestStatus };
+export type { MockWasteBag };
+export { statusLabels, statusColors, typeLabels, qrModeLabels };
 
-export type QrMode = "pre_manufactured" | "hospital_generated" | "both";
-
-export interface MockGenerator {
+// Treater-specific mock generator with computed stats
+export interface TreaterMockGenerator {
   id: string;
   name: string;
   address: string;
@@ -39,58 +35,14 @@ export interface MockGenerator {
   lastActivityAt: number;
 }
 
-export interface MockWasteBag {
-  id: string;
-  qrCode: string;
-  generatorId: string;
-  wasteType: WasteType;
-  status: WasteStatus;
-  weightKg: number | null;
-  createdAt: number;
-}
-
-export interface MockCollectionRequest {
+// Treater-specific mock collection request
+export interface TreaterMockCollectionRequest {
   id: string;
   generatorId: string;
-  status: "pending" | "assigned" | "in_progress" | "completed" | "cancelled";
+  status: CollectionRequestStatus;
   bagCount: number;
   requestedAt: number;
 }
-
-// ===== Labels =====
-export const statusLabels: Record<WasteStatus, string> = {
-  initialized: "Initialized",
-  to_be_collected: "To Be Collected",
-  collected: "Collected",
-  treated: "Treated",
-  aggregated: "Aggregated",
-  disposal_requested: "Disposal Requested",
-  disposed: "Disposed",
-};
-
-export const statusColors: Record<WasteStatus, string> = {
-  initialized: "bg-slate-100 text-slate-700",
-  to_be_collected: "bg-amber-100 text-amber-700",
-  collected: "bg-blue-100 text-blue-700",
-  treated: "bg-emerald-100 text-emerald-700",
-  aggregated: "bg-purple-100 text-purple-700",
-  disposal_requested: "bg-orange-100 text-orange-700",
-  disposed: "bg-green-100 text-green-700",
-};
-
-export const typeLabels: Record<WasteType, string> = {
-  infectious: "Infectious",
-  sharps: "Sharps",
-  pharmaceutical: "Pharmaceutical",
-  pathological: "Pathological",
-  chemical: "Chemical",
-};
-
-export const qrModeLabels: Record<QrMode, string> = {
-  pre_manufactured: "Pre-manufactured",
-  hospital_generated: "Hospital Generated",
-  both: "Both",
-};
 
 // ===== Helper Functions =====
 function randomFromArray<T>(arr: T[]): T {
@@ -113,7 +65,7 @@ const philippineHospitals = [
   { name: "University of Santo Tomas Hospital", city: "Manila", lat: 14.6086, lng: 120.9897 },
 ];
 
-function generateMockGenerators(): MockGenerator[] {
+function generateMockGenerators(): TreaterMockGenerator[] {
   const now = Date.now();
   const dayMs = 24 * 60 * 60 * 1000;
 
@@ -192,11 +144,11 @@ function generateMockWasteBags(): MockWasteBag[] {
 export const mockWasteBags = generateMockWasteBags();
 
 // Generate collection requests
-function generateMockCollectionRequests(): MockCollectionRequest[] {
-  const requests: MockCollectionRequest[] = [];
+function generateMockCollectionRequests(): TreaterMockCollectionRequest[] {
+  const requests: TreaterMockCollectionRequest[] = [];
   const now = Date.now();
   const dayMs = 24 * 60 * 60 * 1000;
-  const statuses: MockCollectionRequest["status"][] = [
+  const statuses: CollectionRequestStatus[] = [
     "pending",
     "assigned",
     "in_progress",
@@ -258,7 +210,7 @@ export function getTotalWasteBags(): number {
   return mockWasteBags.length;
 }
 
-export function getGeneratorsNearCapacity(): MockGenerator[] {
+export function getGeneratorsNearCapacity(): TreaterMockGenerator[] {
   return mockGenerators
     .filter((g) => {
       const utilization = (g.currentStorageKg / g.maxStorageCapacityKg) * 100;
@@ -271,7 +223,7 @@ export function getGeneratorsNearCapacity(): MockGenerator[] {
     });
 }
 
-export function getStorageUtilization(generator: MockGenerator): number {
+export function getStorageUtilization(generator: TreaterMockGenerator): number {
   return Math.round((generator.currentStorageKg / generator.maxStorageCapacityKg) * 100);
 }
 

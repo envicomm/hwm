@@ -28,6 +28,21 @@ const statusLabels: Record<DriverStatus, string> = {
   off_duty: "Off Duty",
 };
 
+function formatLastUpdated(timestamp: number): string {
+  const now = Date.now();
+  const diffMs = now - timestamp;
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  return new Date(timestamp).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
 export function DriverStatusWidget({
   className,
   animate = false,
@@ -53,7 +68,7 @@ export function DriverStatusWidget({
       variant="elevated"
       animate={animate}
       animationDelay={animationDelay}
-      className={cn("flex flex-col", className)}
+      className={cn("flex flex-col h-full", className)}
     >
       <GlassCardHeader className="pb-2">
         <div className="flex items-center justify-between">
@@ -67,7 +82,7 @@ export function DriverStatusWidget({
         </div>
       </GlassCardHeader>
 
-      <GlassCardContent className="space-y-4">
+      <GlassCardContent className="space-y-4 flex-1 flex flex-col">
         {/* Primary metrics */}
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
@@ -115,7 +130,7 @@ export function DriverStatusWidget({
         </div>
 
         {/* Driver list */}
-        <div className="space-y-1.5 max-h-[180px] overflow-y-auto">
+        <div className="space-y-1.5 flex-1 overflow-y-auto">
           {mockDrivers
             .filter((d) => d.status !== "off_duty")
             .slice(0, 5)
@@ -140,9 +155,20 @@ export function DriverStatusWidget({
                   />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium truncate">{driver.name}</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-medium truncate">{driver.name}</p>
+                    <span
+                      className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded"
+                      style={{
+                        backgroundColor: `${driverStatusColors[driver.status]}15`,
+                        color: driverStatusColors[driver.status],
+                      }}
+                    >
+                      {statusLabels[driver.status]}
+                    </span>
+                  </div>
                   <p className="text-[10px] text-muted-foreground">
-                    {driver.vehiclePlate} • {driver.completedToday} completed
+                    {driver.vehiclePlate} • {driver.completedToday} completed • {formatLastUpdated(driver.lastUpdated)}
                   </p>
                 </div>
               </div>

@@ -37,7 +37,19 @@ function DashboardPage() {
         </p>
       </div>
 
-      {/* Row 1: Key Widgets - Inventory, Route Map */}
+      {/* Row 1: Actionable Stats - Storage Capacity, 7-Day Waste Trend */}
+      <div className="animate-fade-in-up stagger-1">
+        <InsightsStats
+          bags={mockWasteBags}
+          maxKg={mockGenerator.maxStorageCapacityKg}
+          currentKg={storageStats.currentKg}
+          currentBags={storageStats.currentBags}
+          maxBags={mockGenerator.maxBagCount}
+          alertThreshold={mockGenerator.storageAlertThreshold}
+        />
+      </div>
+
+      {/* Row 2: Key Widgets - QR Bag Inventory, Collection Route Map */}
       <div className="grid gap-4 md:grid-cols-3">
         <BagInventoryWidget
           availableBags={mockBagInventory.availableBags}
@@ -45,7 +57,7 @@ function DashboardPage() {
           lowStockThreshold={20}
           recentDistributions={mockBagInventory.recentDistributions}
           animate
-          animationDelay={0.1}
+          animationDelay={0.2}
         />
         <CollectionRouteMap
           generatorLocation={mockGenerator.location}
@@ -56,19 +68,7 @@ function DashboardPage() {
           hasActiveCollection={mockCollectionRoute.hasActiveCollection}
           className="md:col-span-2"
           animate
-          animationDelay={0.2}
-        />
-      </div>
-
-      {/* Row 2: Actionable Stats */}
-      <div className="animate-fade-in-up stagger-4">
-        <InsightsStats
-          bags={mockWasteBags}
-          maxKg={mockGenerator.maxStorageCapacityKg}
-          currentKg={storageStats.currentKg}
-          currentBags={storageStats.currentBags}
-          maxBags={mockGenerator.maxBagCount}
-          alertThreshold={mockGenerator.storageAlertThreshold}
+          animationDelay={0.3}
         />
       </div>
 

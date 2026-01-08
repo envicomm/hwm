@@ -1,5 +1,5 @@
-import { useRef, useEffect, useState } from "react";
-import Map, { Marker, type MapRef } from "react-map-gl/mapbox";
+import { useRef, useEffect, useState, useMemo } from "react";
+import Map, { Marker, Source, Layer, type MapRef } from "react-map-gl/mapbox";
 import { Truck, MapPin, AlertCircle, Users } from "lucide-react";
 import {
   GlassCard,
@@ -12,8 +12,13 @@ import { cn } from "@/lib/utils";
 import {
   mockDrivers,
   mockCollectionRequests,
+  mockHauler,
   driverStatusColors,
 } from "@/lib/mock-data";
+import {
+  getServiceAreaGeoJSON,
+  getServiceAreaBounds,
+} from "@/data/metro-manila-boundaries";
 import "mapbox-gl/dist/mapbox-gl.css";
 
 interface FleetMapWidgetProps {
@@ -92,6 +97,28 @@ export function FleetMapWidget({
     (r) => r.status === "in_progress" || r.status === "assigned"
   ).length;
 
+  // Service area GeoJSON for geofence visualization
+  const serviceAreaGeoJSON = useMemo(() => {
+    if (!mockHauler.serviceArea?.cities) return null;
+    return getServiceAreaGeoJSON(mockHauler.serviceArea.cities);
+  }, []);
+
+  // Calculate bounds for restricting map panning to service area
+  const serviceAreaBounds = useMemo(() => {
+    if (!mockHauler.serviceArea?.cities) return undefined;
+    const bounds = getServiceAreaBounds(mockHauler.serviceArea.cities);
+    if (!bounds) return undefined;
+    // Add padding to bounds
+    const padding = 0.05;
+    return [
+      [bounds[0][0] - padding, bounds[0][1] - padding],
+      [bounds[1][0] + padding, bounds[1][1] + padding],
+    ] as [[number, number], [number, number]];
+  }, []);
+
+  // Hauler location for map centering
+  const haulerLocation = mockHauler.location ?? { lat: 14.5547, lng: 121.0244 };
+
   // Fit bounds to show all drivers
   useEffect(() => {
     if (!mapRef.current || !mapLoaded || activeDrivers.length === 0) return;
@@ -150,15 +177,40 @@ export function FleetMapWidget({
             ref={mapRef}
             mapboxAccessToken={MAPBOX_TOKEN}
             initialViewState={{
-              longitude: 121.0244,
-              latitude: 14.5547,
+              longitude: haulerLocation.lng,
+              latitude: haulerLocation.lat,
               zoom: 11,
             }}
             style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
             mapStyle={mapStyle}
             onLoad={() => setMapLoaded(true)}
             attributionControl={false}
+            maxBounds={serviceAreaBounds}
           >
+            {/* Service Area Geofence */}
+            {serviceAreaGeoJSON && (
+              <Source id="service-area" type="geojson" data={serviceAreaGeoJSON}>
+                <Layer
+                  id="service-area-fill"
+                  type="fill"
+                  paint={{
+                    "fill-color": "#3b82f6",
+                    "fill-opacity": 0.08,
+                  }}
+                />
+                <Layer
+                  id="service-area-border"
+                  type="line"
+                  paint={{
+                    "line-color": "#3b82f6",
+                    "line-width": 2,
+                    "line-dasharray": [4, 2],
+                    "line-opacity": 0.6,
+                  }}
+                />
+              </Source>
+            )}
+
             {/* Treatment Facility Marker */}
             <Marker
               longitude={treatmentFacility.lng}

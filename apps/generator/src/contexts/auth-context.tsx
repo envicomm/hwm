@@ -6,27 +6,13 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
+import type { GeneratorUser, AuthContextType } from "@hwm/types/auth";
 
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  generatorId: string;
-  generatorName: string;
-  treaterId: string;
-}
-
-interface AuthContextType {
-  user: User | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
-}
+type User = GeneratorUser;
 
 const AUTH_STORAGE_KEY = "hwm-generator-auth";
 
-const AuthContext = createContext<AuthContextType | null>(null);
+const AuthContext = createContext<AuthContextType<User> | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);

@@ -13,7 +13,7 @@ import {
   getActiveCollections,
 } from "@/lib/mock-data";
 
-interface FleetInsightsWidgetProps {
+interface CardProps {
   className?: string;
   animate?: boolean;
   animationDelay?: number;
@@ -172,84 +172,89 @@ function MiniSparkline({
   );
 }
 
-export function FleetInsightsWidget({
+export function ActiveOperationsCard({
   className,
   animate = false,
   animationDelay,
-}: FleetInsightsWidgetProps) {
-  const weeklyData = useMemo(() => getWeeklyActivityData(), []);
+}: CardProps) {
   const activeCollections = getActiveCollections();
   const pendingDisposals = getPendingDisposals();
 
   return (
-    <div className={cn("grid gap-3 md:grid-cols-2", className)}>
-      {/* Active Operations Card */}
-      <GlassCard
-        variant="elevated"
-        animate={animate}
-        animationDelay={animationDelay}
-        className="p-3"
-      >
-        <GlassCardHeader className="pb-1">
-          <GlassCardTitle className="flex items-center gap-2">
-            <Package className="h-4 w-4" />
-            Active Operations
-          </GlassCardTitle>
-        </GlassCardHeader>
-        <GlassCardContent className="space-y-2">
-          <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-semibold tabular-nums">
-              {activeCollections}
-            </span>
-            <span className="text-xs text-muted-foreground">in progress</span>
-          </div>
+    <GlassCard
+      variant="elevated"
+      animate={animate}
+      animationDelay={animationDelay}
+      className={cn("p-3", className)}
+    >
+      <GlassCardHeader className="pb-1">
+        <GlassCardTitle className="flex items-center gap-2">
+          <Package className="h-4 w-4" />
+          Active Operations
+        </GlassCardTitle>
+      </GlassCardHeader>
+      <GlassCardContent className="space-y-2">
+        <div className="flex items-baseline justify-between">
+          <span className="text-2xl font-semibold tabular-nums">
+            {activeCollections}
+          </span>
+          <span className="text-xs text-muted-foreground">in progress</span>
+        </div>
 
-          {/* Mini progress indicators */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Collections</span>
-              <span className="font-medium">{activeCollections}</span>
-            </div>
-            <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-              <div
-                className="h-full rounded-full bg-amber-500 transition-all duration-500"
-                style={{ width: `${Math.min(activeCollections * 10, 100)}%` }}
-              />
-            </div>
+        {/* Mini progress indicators */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">Collections</span>
+            <span className="font-medium">{activeCollections}</span>
           </div>
-
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Pending Disposals</span>
-              <span className="font-medium">{pendingDisposals}</span>
-            </div>
-            <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-              <div
-                className="h-full rounded-full bg-violet-500 transition-all duration-500"
-                style={{ width: `${Math.min(pendingDisposals * 15, 100)}%` }}
-              />
-            </div>
+          <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full rounded-full bg-amber-500 transition-all duration-500"
+              style={{ width: `${Math.min(activeCollections * 10, 100)}%` }}
+            />
           </div>
-        </GlassCardContent>
-      </GlassCard>
+        </div>
 
-      {/* Weekly Trend Chart */}
-      <GlassCard
-        variant="elevated"
-        animate={animate}
-        animationDelay={animationDelay ? animationDelay + 0.1 : undefined}
-        className="p-3"
-      >
-        <GlassCardHeader className="pb-1">
-          <GlassCardTitle className="flex items-center gap-2">
-            <Activity className="h-4 w-4" />
-            7-Day Activity
-          </GlassCardTitle>
-        </GlassCardHeader>
-        <GlassCardContent>
-          <MiniSparkline data={weeklyData} />
-        </GlassCardContent>
-      </GlassCard>
-    </div>
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">Pending Disposals</span>
+            <span className="font-medium">{pendingDisposals}</span>
+          </div>
+          <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full rounded-full bg-violet-500 transition-all duration-500"
+              style={{ width: `${Math.min(pendingDisposals * 15, 100)}%` }}
+            />
+          </div>
+        </div>
+      </GlassCardContent>
+    </GlassCard>
+  );
+}
+
+export function SevenDayActivityCard({
+  className,
+  animate = false,
+  animationDelay,
+}: CardProps) {
+  const weeklyData = useMemo(() => getWeeklyActivityData(), []);
+
+  return (
+    <GlassCard
+      variant="elevated"
+      animate={animate}
+      animationDelay={animationDelay}
+      className={cn("p-3", className)}
+    >
+      <GlassCardHeader className="pb-1">
+        <GlassCardTitle className="flex items-center gap-2">
+          <Activity className="h-4 w-4" />
+          7-Day Activity
+        </GlassCardTitle>
+      </GlassCardHeader>
+      <GlassCardContent>
+        <MiniSparkline data={weeklyData} />
+      </GlassCardContent>
+    </GlassCard>
   );
 }

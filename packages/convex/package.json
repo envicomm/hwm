@@ -13,6 +13,7 @@
     "./*": "./convex/*"
   },
   "dependencies": {
+    "@hwm/types": "workspace:*",
     "convex": "^1.22.0"
   },
   "devDependencies": {

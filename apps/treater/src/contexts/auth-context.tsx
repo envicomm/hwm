@@ -6,27 +6,13 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
+import type { TreaterUser, AuthContextType } from "@hwm/types/auth";
 
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  treaterId: string;
-  treaterName: string;
-  role: "treater" | "admin";
-}
-
-interface AuthContextType {
-  user: User | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
-}
+type User = TreaterUser;
 
 const AUTH_STORAGE_KEY = "hwm-treater-auth";
 
-const AuthContext = createContext<AuthContextType | null>(null);
+const AuthContext = createContext<AuthContextType<User> | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
