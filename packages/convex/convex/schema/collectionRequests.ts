@@ -19,9 +19,24 @@ export const collectionRequests = defineTable({
 	// Assigned driver
 	driverId: v.optional(v.id("users")),
 
+	// Route tracking (for multi-stop routes)
+	routeOrder: v.optional(v.number()), // Order in multi-stop route
+	routeGroupId: v.optional(v.string()), // Groups multiple stops in same route
+	estimatedArrival: v.optional(v.number()), // Estimated arrival timestamp
+	driverLocation: v.optional(
+		v.object({
+			lat: v.number(),
+			lng: v.number(),
+			updatedAt: v.number(),
+		}),
+	),
+
 	// Actual pickup details
 	actualPickupAt: v.optional(v.number()),
 	pickupSignatureUrl: v.optional(v.string()),
+
+	// DENR compliance
+	transportPermitId: v.optional(v.id("transportPermits")),
 
 	createdBy: v.id("users"),
 	createdAt: v.number(),
@@ -32,4 +47,6 @@ export const collectionRequests = defineTable({
 	.index("by_hauler", ["haulerId"])
 	.index("by_driver", ["driverId"])
 	.index("by_status", ["status"])
-	.index("by_treater_status", ["treaterId", "status"]);
+	.index("by_treater_status", ["treaterId", "status"])
+	.index("by_route_group", ["routeGroupId"])
+	.index("by_generator_status", ["generatorId", "status"]);

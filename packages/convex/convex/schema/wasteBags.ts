@@ -7,6 +7,10 @@ export const wasteBags = defineTable({
 	// QR code identifier (unique, scannable)
 	qrCode: v.string(),
 
+	// QR source tracking
+	qrSource: v.union(v.literal("pre_manufactured"), v.literal("hospital_generated")),
+	bagInventoryId: v.optional(v.id("bagInventory")), // Set if pre-manufactured
+
 	// Origin
 	generatorId: v.id("generators"),
 	treaterId: v.id("treaters"), // Denormalized for efficient queries
@@ -43,4 +47,5 @@ export const wasteBags = defineTable({
 	.index("by_treater_status", ["treaterId", "status"])
 	.index("by_generator_status", ["generatorId", "status"])
 	.index("by_collection_request", ["collectionRequestId"])
-	.index("by_disposal_batch", ["disposalBatchId"]);
+	.index("by_disposal_batch", ["disposalBatchId"])
+	.index("by_bag_inventory", ["bagInventoryId"]);

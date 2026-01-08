@@ -4,6 +4,7 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
+import "../styles.css";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -23,7 +24,7 @@ function RootComponent() {
       <head>
         <HeadContent />
       </head>
-      <body className="min-h-screen bg-gray-900 text-white">
+      <body className="min-h-screen bg-background text-foreground">
         <Outlet />
         <Scripts />
       </body>

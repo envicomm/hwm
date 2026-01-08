@@ -4,6 +4,11 @@
   "type": "module",
   "scripts": {
     "dev": "turbo run dev",
+    "dev:generator": "pnpm --filter @hwm/generator dev",
+    "dev:treater": "pnpm --filter @hwm/treater dev",
+    "dev:trucking": "pnpm --filter @hwm/trucking dev",
+    "dev:convex": "pnpm --filter @hwm/convex dev",
+    "kill-all": "npx kill-port 3000 3001 3002 3003 3004 3005 3006 3007 3008 3009 3010",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",

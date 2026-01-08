@@ -7,6 +7,9 @@ import {
 	treaterHaulerPartners,
 	// User management
 	users,
+	// Bag inventory
+	bagInventory,
+	bagDistributions,
 	// Waste management
 	wasteBags,
 	wasteStatusHistory,
@@ -30,6 +33,10 @@ export default defineSchema({
 
 	// User management
 	users,
+
+	// Bag inventory
+	bagInventory,
+	bagDistributions,
 
 	// Waste management
 	wasteBags,

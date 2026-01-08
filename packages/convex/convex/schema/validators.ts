@@ -37,3 +37,27 @@ export const disposalBatchStatus = v.union(
 	v.literal("in_transit"),
 	v.literal("disposed")
 );
+
+// Bag inventory status (pre-manufactured bags)
+export const bagInventoryStatus = v.union(
+	v.literal("manufactured"),
+	v.literal("distributed"),
+	v.literal("activated"),
+	v.literal("damaged"),
+	v.literal("expired")
+);
+
+// Bag distribution status
+export const bagDistributionStatus = v.union(
+	v.literal("pending"),
+	v.literal("shipped"),
+	v.literal("received"),
+	v.literal("partial")
+);
+
+// QR code generation mode
+export const qrMode = v.union(
+	v.literal("pre_manufactured"),
+	v.literal("hospital_generated"),
+	v.literal("both")
+);
