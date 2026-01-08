@@ -1,0 +1,22 @@
+{
+  "name": "@hwm/auth",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "biome lint ./src"
+  },
+  "dependencies": {
+    "better-auth": "^1.4.10",
+    "@convex-dev/better-auth": "^0.10.9"
+  },
+  "devDependencies": {
+    "@hwm/typescript-config": "workspace:*",
+    "typescript": "^5.7.2"
+  }
+}

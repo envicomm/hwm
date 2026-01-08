@@ -1,0 +1,36 @@
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native builds
+ios/
+android/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# Metro
+.metro-health-check*
+
+# Debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# Environment
+.env.local
+.env.*.local
+
+# TypeScript
+*.tsbuildinfo
+
+# Uniwind generated
+src/uniwind-types.d.ts
+
+# Dependencies (handled by root)
+node_modules/

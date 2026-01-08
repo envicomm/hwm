@@ -1,0 +1,10 @@
+@import "tailwindcss";
+@import "uniwind";
+
+/* Include Expo Router app directory */
+@source "../app";
+
+/* Include components and other source directories */
+@source "./components";
+@source "./contexts";
+@source "./lib";

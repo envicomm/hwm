@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "HWM Mobile",
+    "slug": "hwm-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "hwm-mobile",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "platforms": ["ios"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.hwm.mobile",
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app uses the camera to scan QR codes on waste bags for tracking purposes."
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow HWM Mobile to access your camera to scan waste bag QR codes."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
