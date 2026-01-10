@@ -5,6 +5,7 @@ import {
 	generators,
 	haulers,
 	treaterHaulerPartners,
+	organizationLinks,
 	// User management
 	users,
 	// Bag inventory
@@ -30,6 +31,7 @@ export default defineSchema({
 	generators,
 	haulers,
 	treaterHaulerPartners,
+	organizationLinks,
 
 	// User management
 	users,

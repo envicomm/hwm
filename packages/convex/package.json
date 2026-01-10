@@ -6,15 +6,19 @@
   "scripts": {
     "dev": "convex dev",
     "deploy": "convex deploy",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "seed": "npx convex run seed/testData:seedTestData",
+    "seed:clear": "npx convex run seed/testData:clearTestData"
   },
   "exports": {
     ".": "./src/index.ts",
     "./*": "./convex/*"
   },
   "dependencies": {
+    "@convex-dev/better-auth": "^0.10.9",
     "@hwm/types": "workspace:*",
-    "convex": "^1.22.0"
+    "better-auth": "^1.4.10",
+    "convex": "^1.31.3"
   },
   "devDependencies": {
     "@hwm/typescript-config": "workspace:*",

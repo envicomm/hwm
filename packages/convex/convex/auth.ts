@@ -61,7 +61,7 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
 		// Email/password authentication
 		emailAndPassword: {
 			enabled: true,
-			requireEmailVerification: true, // Always require email verification for security
+			requireEmailVerification: isProduction, // Only require in production, skip in dev for easier testing
 			async sendResetPassword({ user, url }) {
 				const apiKey = process.env.RESEND_API_KEY;
 				if (!apiKey) {

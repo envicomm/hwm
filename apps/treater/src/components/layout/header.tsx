@@ -1,6 +1,6 @@
 import { LogOut, User, Bell } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
-import { useAuth } from "@/contexts/auth-context";
+import { useSession, signOut } from "@/lib/auth-client";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -13,16 +13,17 @@ import {
 import { Button } from "@/components/ui/button";
 
 export function Header() {
-  const { user, logout } = useAuth();
+  const { data: session } = useSession();
+  const user = session?.user;
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await signOut();
     navigate({ to: "/" });
   };
 
   const initials = user?.name
-    .split(" ")
+    ?.split(" ")
     .map((n) => n[0])
     .join("")
     .toUpperCase()
@@ -31,7 +32,7 @@ export function Header() {
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6">
       <div>
-        <h1 className="text-lg font-semibold">{user?.treaterName}</h1>
+        <h1 className="text-lg font-semibold">Treatment Facility</h1>
         <p className="text-xs text-muted-foreground">Treatment Facility Dashboard</p>
       </div>
 

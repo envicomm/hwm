@@ -3,7 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuth } from "@/contexts/auth-context";
+import { signIn } from "@/lib/auth-client";
 import {
   FlaskConical,
   Shield,
@@ -23,15 +23,19 @@ export function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    await login(email, password);
-    setIsLoading(false);
-    navigate({ to: "/dashboard" });
+    try {
+      await signIn.email({ email, password });
+      navigate({ to: "/dashboard" });
+    } catch {
+      // Handle sign-in error
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

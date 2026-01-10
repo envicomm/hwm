@@ -1,3 +1,18 @@
+// Organization type for multi-app routing
+export type OrganizationType = "treater" | "generator" | "hauler";
+
+// Organization structure used by Better Auth
+export interface HwmOrganization {
+	id: string;
+	name: string;
+	organizationType: OrganizationType;
+	linkedEntityId: string;
+	createdAt: Date;
+	slug?: string;
+	logo?: string;
+	metadata?: Record<string, unknown>;
+}
+
 // Base user type with common fields
 export interface BaseUser {
 	id: string;

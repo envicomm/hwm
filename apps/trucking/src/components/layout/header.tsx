@@ -1,5 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
-import { useAuth } from "@/contexts/auth-context";
+import { useSession, signOut } from "@/lib/auth-client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,11 +13,12 @@ import {
 import { Bell, ChevronDown, LogOut, Settings, User } from "lucide-react";
 
 export function Header() {
-  const { user, logout } = useAuth();
+  const { data: session } = useSession();
+  const user = session?.user;
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await signOut();
     navigate({ to: "/" });
   };
 
@@ -34,7 +35,7 @@ export function Header() {
       <div className="flex items-center gap-3">
         <div>
           <h1 className="text-sm font-semibold text-foreground">
-            {user?.haulerName || "Fleet Management"}
+            Fleet Management
           </h1>
           <p className="text-xs text-muted-foreground">
             Operations Dashboard
