@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { useMutation, useQuery } from "convex/react";
+import { api, Id } from "@hwm/convex";
 import {
   Card,
   CardContent,
@@ -31,10 +33,32 @@ export const Route = createFileRoute("/_dashboard/dashboard")({
 function DashboardPage() {
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const storageStats = getStorageStats(mockWasteBags);
+  const createWasteBag = useMutation(api.wasteBags.create);
 
-  const handleWasteBagSubmit = (data: any) => {
-    console.log("New waste bag:", data);
-    // TODO: Integrate with Convex to save the waste bag
+  // Query latest waste bags from Convex
+  const wasteBags = useQuery(api.wasteBags.getLatest, { limit: 10 });
+
+  const handleWasteBagSubmit = async (data: any) => {
+    try {
+      // FOR TESTING
+      const generatorId =
+        "js7f6y749bvmr94r2jjtmt88r17z4mf0" as Id<"generators">;
+
+      const wasteBagId = await createWasteBag({
+        generatorId,
+        qrCode: data.qrCode,
+        qrSource: data.qrSource,
+        wasteType: data.wasteType,
+        weightKg: data.weightKg ? parseFloat(data.weightKg) : undefined,
+        description: data.description || undefined,
+        imageUrl: data.imageUrl || undefined,
+      });
+
+      console.log("Waste bag created successfully:", wasteBagId);
+    } catch (error) {
+      console.error("Failed to create waste bag:", error);
+      throw error; // Re-throw so the wizard can handle it
+    }
   };
 
   return (
@@ -104,7 +128,7 @@ function DashboardPage() {
             </Button>
           </CardHeader>
           <CardContent>
-            <WasteBagsTable bags={mockWasteBags.slice(0, 10)} />
+            <WasteBagsTable bags={wasteBags ?? []} />
           </CardContent>
         </Card>
       </div>

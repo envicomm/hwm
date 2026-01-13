@@ -17,13 +17,14 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import {
-  mockCollectionRequests,
   mockDisposalBatches,
   collectionStatusColors,
   disposalStatusColors,
   type CollectionRequestStatus,
   type DisposalBatchStatus,
 } from "@/lib/mock-data";
+import { api } from "@hwm/convex";
+import { useQuery } from "convex/react";
 
 interface RecentActivityTableProps {
   className?: string;
@@ -66,9 +67,10 @@ export function RecentActivityTable({
   const [activeTab, setActiveTab] = useState<TabValue>("collections");
 
   // Get recent items
-  const recentCollections = mockCollectionRequests
-    .filter((r) => r.status !== "cancelled")
-    .slice(0, 5);
+  const recentCollectionRequests =
+    useQuery(api.collectionRequests.getLatest, {
+      limit: 11,
+    }) || [];
 
   const recentDisposals = mockDisposalBatches.slice(0, 5);
 
@@ -128,16 +130,16 @@ export function RecentActivityTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {recentCollections.map((request) => (
-                <TableRow key={request.id} className="hover:bg-muted/30">
+              {recentCollectionRequests.map((collection) => (
+                <TableRow key={collection._id} className="hover:bg-muted/30">
                   <TableCell className="py-2.5">
                     <div>
                       <p className="text-sm font-medium truncate max-w-[160px]">
-                        {request.generatorName}
+                        {collection.generatorId}
                       </p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {formatDate(request.requestedPickupDate)}
-                      </p>
+                      {/* <p className="text-[10px] text-muted-foreground">
+                        {formatDate(collection.requestedPickupDate)}
+                      </p> */}
                     </div>
                   </TableCell>
                   <TableCell className="py-2.5">
@@ -145,19 +147,19 @@ export function RecentActivityTable({
                       variant="outline"
                       className="text-[10px] px-1.5"
                       style={{
-                        backgroundColor: `${collectionStatusColors[request.status]}15`,
-                        color: collectionStatusColors[request.status],
-                        borderColor: `${collectionStatusColors[request.status]}30`,
+                        backgroundColor: `${collectionStatusColors[collection.status]}15`,
+                        color: collectionStatusColors[collection.status],
+                        borderColor: `${collectionStatusColors[collection.status]}30`,
                       }}
                     >
-                      {collectionStatusLabels[request.status]}
+                      {collectionStatusLabels[collection.status]}
                     </Badge>
                   </TableCell>
                   <TableCell className="py-2.5 text-xs text-muted-foreground">
-                    {request.driverName || "—"}
+                    {collection.driverId || "—"}
                   </TableCell>
                   <TableCell className="py-2.5 text-xs text-right tabular-nums">
-                    {request.estimatedBagCount}
+                    {collection.estimatedBagCount}
                   </TableCell>
                 </TableRow>
               ))}

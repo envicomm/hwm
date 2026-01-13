@@ -20,7 +20,7 @@ import { typeLabels, type WasteType } from "@/lib/mock-data";
 interface AddWasteBagWizardProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: WasteBagFormData) => void;
+  onSubmit: (data: WasteBagFormData) => void | Promise<void>;
 }
 
 interface WasteBagFormData {
@@ -110,10 +110,15 @@ export function AddWasteBagWizard({
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    onSubmit(formData);
-    setIsSubmitting(false);
-    setIsSuccess(true);
+    try {
+      await onSubmit(formData);
+      setIsSuccess(true);
+    } catch (error) {
+      console.error("Error creating waste bag:", error);
+      // Keep the form open and don't show success
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleAddAnother = () => {

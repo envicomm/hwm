@@ -8,11 +8,12 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import type { MockWasteBag, WasteStatus, WasteType } from "@/lib/mock-data";
+import type { WasteStatus, WasteType } from "@/lib/mock-data";
 import { statusLabels, typeLabels } from "@/lib/mock-data";
+import { Doc } from "@hwm/convex";
 
 interface WasteBagsTableProps {
-  bags: MockWasteBag[];
+  bags: Doc<"wasteBags">[];
 }
 
 function getStatusVariant(
@@ -85,23 +86,26 @@ export function WasteBagsTable({ bags }: WasteBagsTableProps) {
       </TableHeader>
       <TableBody>
         {bags.map((bag) => (
-          <TableRow key={bag.id}>
+          <TableRow key={bag._id}>
             <TableCell className="font-mono text-xs">{bag.qrCode}</TableCell>
             <TableCell>
               <Badge
                 variant="secondary"
-                className={cn("font-normal", getTypeClassName(bag.wasteType))}
+                className={cn(
+                  "font-normal",
+                  getTypeClassName(bag.wasteType as WasteType)
+                )}
               >
-                {typeLabels[bag.wasteType]}
+                {typeLabels[bag.wasteType as WasteType]}
               </Badge>
             </TableCell>
             <TableCell>
-              <Badge variant={getStatusVariant(bag.status)}>
-                {statusLabels[bag.status]}
+              <Badge variant={getStatusVariant(bag.status as WasteStatus)}>
+                {statusLabels[bag.status as WasteStatus]}
               </Badge>
             </TableCell>
             <TableCell className="text-muted-foreground">
-              {formatWeight(bag.weightKg)}
+              {formatWeight(bag.weightKg ?? null)}
             </TableCell>
             <TableCell className="text-muted-foreground">
               {formatDate(bag.createdAt)}
@@ -110,7 +114,10 @@ export function WasteBagsTable({ bags }: WasteBagsTableProps) {
         ))}
         {bags.length === 0 && (
           <TableRow>
-            <TableCell colSpan={5} className="text-center text-muted-foreground">
+            <TableCell
+              colSpan={5}
+              className="text-center text-muted-foreground"
+            >
               No waste bags found
             </TableCell>
           </TableRow>
