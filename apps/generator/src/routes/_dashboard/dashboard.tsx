@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   Card,
@@ -6,11 +7,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 import { WasteBagsTable } from "@/components/dashboard/waste-bags-table";
 import { ActivityTimeline } from "@/components/dashboard/activity-timeline";
 import { BagInventoryWidget } from "@/components/dashboard/bag-inventory-widget";
 import { CollectionRouteMap } from "@/components/dashboard/collection-route-map";
 import { InsightsStats } from "@/components/dashboard/insights-stats";
+import { AddWasteBagWizard } from "@/components/dashboard/add-waste-bag-wizard";
 import {
   mockWasteBags,
   mockCollectionRequests,
@@ -25,7 +29,13 @@ export const Route = createFileRoute("/_dashboard/dashboard")({
 });
 
 function DashboardPage() {
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
   const storageStats = getStorageStats(mockWasteBags);
+
+  const handleWasteBagSubmit = (data: any) => {
+    console.log("New waste bag:", data);
+    // TODO: Integrate with Convex to save the waste bag
+  };
 
   return (
     <div className="space-y-6">
@@ -75,20 +85,35 @@ function DashboardPage() {
       {/* Row 3: Activity Timeline + Recent Waste Bags Table */}
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="animate-fade-in-up stagger-5">
-          <ActivityTimeline bags={mockWasteBags} requests={mockCollectionRequests} />
+          <ActivityTimeline
+            bags={mockWasteBags}
+            requests={mockCollectionRequests}
+          />
         </div>
         <Card className="lg:col-span-2 animate-fade-in-up stagger-6 card-interactive">
-          <CardHeader>
-            <CardTitle>Recent Waste Bags</CardTitle>
-            <CardDescription>
-              Your most recent waste bag entries
-            </CardDescription>
+          <CardHeader className="flex flex-row items-start justify-between space-y-0">
+            <div className="space-y-1.5">
+              <CardTitle>Recent Waste Bags</CardTitle>
+              <CardDescription>
+                Your most recent waste bag entries
+              </CardDescription>
+            </div>
+            <Button className="mt-2" onClick={() => setIsWizardOpen(true)}>
+              <Plus className="h-4 w-4" />
+              Add Waste Bag
+            </Button>
           </CardHeader>
           <CardContent>
             <WasteBagsTable bags={mockWasteBags.slice(0, 10)} />
           </CardContent>
         </Card>
       </div>
+
+      <AddWasteBagWizard
+        isOpen={isWizardOpen}
+        onClose={() => setIsWizardOpen(false)}
+        onSubmit={handleWasteBagSubmit}
+      />
     </div>
   );
 }
