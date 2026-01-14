@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
+import { useAction, useMutation } from "convex/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/auth-context";
+import { api } from "@hwm/convex";
 import {
   FlaskConical,
   Shield,
@@ -11,33 +13,304 @@ import {
   Recycle,
   ClipboardList,
   ArrowRight,
-  Eye,
-  EyeOff,
   Clock,
   CheckCircle2,
-  Building2,
+  Plus,
 } from "lucide-react";
 
 export function LoginPage() {
-  const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showRegister, setShowRegister] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [registerData, setRegisterData] = useState({
+    email: "",
+    password: "",
+  });
+  const [newAccountData, setNewAccountData] = useState({
+    name: "",
+    email: "",
+    phoneNumber: "",
+    facilityName: "",
+    facilityAddress: "",
+    accountPassword: "",
+    verifyPassword: "",
+  });
+  const [error, setError] = useState("");
+  const [loginFieldErrors, setLoginFieldErrors] = useState<{
+    email?: string;
+    password?: string;
+  }>({});
+  const [fieldErrors, setFieldErrors] = useState<{
+    facilityName?: string;
+    facilityAddress?: string;
+    email?: string;
+    phoneNumber?: string;
+    accountPassword?: string;
+    verifyPassword?: string;
+  }>({});
+  const [verifyFieldErrors, setVerifyFieldErrors] = useState<{
+    email?: string;
+    password?: string;
+  }>({});
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const verifyCredentials = useAction(api.users.queries.verifyAdminCredentials);
+  const createTreaterAccount = useMutation(api.treaters.mutations.createAccount);
+
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const moveCursorToEnd = (e: React.FocusEvent<HTMLInputElement>) => {
+    const input = e.target;
+    setTimeout(() => {
+      const length = input.value.length;
+      input.setSelectionRange(length, length);
+    }, 0);
+  };
+
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginFieldErrors({});
+
+    const errors: {
+      email?: string;
+      password?: string;
+    } = {};
+
+    // Validate email
+    if (!email?.trim()) {
+      errors.email = "Required";
+    } else if (!isValidEmail(email)) {
+      errors.email = "Invalid email";
+    }
+
+    // Validate password
+    if (!password?.trim()) {
+      errors.password = "Required";
+    }
+
+    // If there are errors, set them and return
+    if (Object.keys(errors).length > 0) {
+      setLoginFieldErrors(errors);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await login(email, password);
+      navigate({ to: "/dashboard" });
+    } catch (err) {
+      // Set error on both fields for invalid login
+      setLoginFieldErrors({
+        email: "Invalid credentials",
+        password: "Invalid credentials",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerification = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    await login(email, password);
-    setIsLoading(false);
-    navigate({ to: "/dashboard" });
+    setVerifyFieldErrors({});
+
+    const errors: {
+      email?: string;
+      password?: string;
+    } = {};
+
+    // Validate email
+    if (!registerData.email?.trim()) {
+      errors.email = "Required";
+    } else if (!isValidEmail(registerData.email)) {
+      errors.email = "Invalid email";
+    }
+
+    // Validate password
+    if (!registerData.password?.trim()) {
+      errors.password = "Required";
+    }
+
+    // If there are errors, set them and return
+    if (Object.keys(errors).length > 0) {
+      setVerifyFieldErrors(errors);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      // Verify credentials against environment variables
+      const result = await verifyCredentials({
+        email: registerData.email,
+        password: registerData.password,
+      });
+
+      if (!result.success) {
+        // Set error on both fields for invalid credentials
+        setVerifyFieldErrors({
+          email: "Invalid credentials",
+          password: "Invalid credentials",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Credentials are valid, show registration form
+      console.log("Admin verified:", result.user);
+      setIsVerified(true);
+      setIsLoading(false);
+    } catch (err) {
+      console.error("Verification error:", err);
+      setError("An error occurred. Please try again.");
+      setIsLoading(false);
+    }
+  };
+
+  const handleCreateAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setFieldErrors({});
+
+    // Validate all required fields
+    const {
+      facilityName,
+      facilityAddress,
+      email,
+      phoneNumber,
+      accountPassword,
+      verifyPassword,
+    } = newAccountData;
+
+    const errors: {
+      facilityName?: string;
+      facilityAddress?: string;
+      email?: string;
+      phoneNumber?: string;
+      accountPassword?: string;
+      verifyPassword?: string;
+    } = {};
+
+    // Validate facility name
+    if (!facilityName?.trim()) {
+      errors.facilityName = "Required";
+    }
+
+    // Validate facility address
+    if (!facilityAddress?.trim()) {
+      errors.facilityAddress = "Required";
+    }
+
+    // Validate email
+    if (!email?.trim()) {
+      errors.email = "Required";
+    } else if (!isValidEmail(email)) {
+      errors.email = "Invalid email";
+    }
+
+    // Validate phone number
+    if (!phoneNumber?.trim()) {
+      errors.phoneNumber = "Required";
+    } else if (
+      !(
+        (phoneNumber.startsWith("0") && phoneNumber.length === 11) ||
+        (!phoneNumber.startsWith("0") && phoneNumber.length === 10)
+      )
+    ) {
+      errors.phoneNumber = "Invalid phone number";
+    }
+
+    // Validate password
+    if (!accountPassword?.trim()) {
+      errors.accountPassword = "Required";
+    }
+
+    // Validate verify password
+    if (!verifyPassword?.trim()) {
+      errors.verifyPassword = "Required";
+    } else if (accountPassword !== verifyPassword) {
+      errors.verifyPassword = "Passwords must match";
+    }
+
+    // If there are errors, set them and return
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      // Create the treater account
+      const treaterId = await createTreaterAccount({
+        facilityName,
+        facilityAddress,
+        contactEmail: email,
+        contactPhone: phoneNumber,
+      });
+
+      console.log("Treater account created:", treaterId);
+
+      // TODO: Create user account with better-auth using accountPassword
+      // For now, just navigate to dashboard
+      setIsLoading(false);
+      navigate({ to: "/dashboard" });
+    } catch (err) {
+      console.error("Account creation error:", err);
+      setError("Failed to create account. Please try again.");
+      setIsLoading(false);
+    }
+  };
+
+  const handleRegisterChange = (field: string, value: string) => {
+    // Clear field-specific error when user starts typing
+    setVerifyFieldErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors[field as keyof typeof newErrors];
+      return newErrors;
+    });
+    setRegisterData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleNewAccountChange = (field: string, value: string) => {
+    // Clear field-specific error when user starts typing
+    setFieldErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors[field as keyof typeof newErrors];
+      return newErrors;
+    });
+
+    // Special validation for phone number
+    if (field === "phoneNumber") {
+      // Only allow digits
+      const digitsOnly = value.replace(/\D/g, "");
+
+      // Enforce length limits based on leading 0
+      let validatedValue = digitsOnly;
+      if (digitsOnly.startsWith("0")) {
+        // Limit to 11 digits if starts with 0
+        validatedValue = digitsOnly.slice(0, 11);
+      } else {
+        // Limit to 10 digits if doesn't start with 0
+        validatedValue = digitsOnly.slice(0, 10);
+      }
+
+      setNewAccountData((prev) => ({ ...prev, [field]: validatedValue }));
+    } else {
+      setNewAccountData((prev) => ({ ...prev, [field]: value }));
+    }
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row">
+    <div className="h-screen flex flex-col lg:flex-row overflow-hidden">
       {/* Left Hero Panel - Scientific Dark */}
-      <div className="relative flex-1 bg-hero overflow-hidden">
+      <div className="relative flex-1 bg-hero overflow-hidden lg:h-screen">
         {/* Grid Pattern Overlay */}
         <div className="absolute inset-0 hero-grid" />
 
@@ -53,7 +326,14 @@ export function LoginPage() {
           xmlns="http://www.w3.org/2000/svg"
         >
           <defs>
-            <pattern id="hex-pattern" x="0" y="0" width="56" height="100" patternUnits="userSpaceOnUse">
+            <pattern
+              id="hex-pattern"
+              x="0"
+              y="0"
+              width="56"
+              height="100"
+              patternUnits="userSpaceOnUse"
+            >
               <path
                 d="M28 0 L56 16 L56 48 L28 64 L0 48 L0 16 Z"
                 stroke="currentColor"
@@ -121,18 +401,35 @@ export function LoginPage() {
                 className="text-hero-muted text-base lg:text-lg max-w-lg leading-relaxed animate-in fade-in slide-in-from-left-4 duration-700 fill-mode-both"
                 style={{ animationDelay: "300ms" }}
               >
-                Manage waste intake, monitor treatment processes, generate compliance
-                certificates, and maintain full regulatory oversight across your facility.
+                Manage waste intake, monitor treatment processes, generate
+                compliance certificates, and maintain full regulatory oversight
+                across your facility.
               </p>
             </div>
 
             {/* Feature Cards */}
             <div className="grid grid-cols-2 gap-3 max-w-lg">
               {[
-                { icon: FlaskConical, label: "Treatment Tracking", desc: "Process monitoring" },
-                { icon: FileCheck, label: "COT Generation", desc: "Compliance certificates" },
-                { icon: Recycle, label: "Waste Processing", desc: "Intake management" },
-                { icon: ClipboardList, label: "Disposal Batches", desc: "Batch tracking" },
+                {
+                  icon: FlaskConical,
+                  label: "Treatment Tracking",
+                  desc: "Process monitoring",
+                },
+                {
+                  icon: FileCheck,
+                  label: "COT Generation",
+                  desc: "Compliance certificates",
+                },
+                {
+                  icon: Recycle,
+                  label: "Waste Processing",
+                  desc: "Intake management",
+                },
+                {
+                  icon: ClipboardList,
+                  label: "Disposal Batches",
+                  desc: "Batch tracking",
+                },
               ].map((feature, i) => (
                 <div
                   key={feature.label}
@@ -177,7 +474,7 @@ export function LoginPage() {
       </div>
 
       {/* Right Login Panel */}
-      <div className="w-full lg:w-[460px] xl:w-[500px] flex flex-col bg-background relative">
+      <div className={`w-full lg:w-[460px] xl:w-[500px] flex flex-col bg-background relative lg:h-screen ${showCreateForm ? 'overflow-y-auto' : 'overflow-y-hidden'}`}>
         {/* Subtle Grid Background */}
         <div
           className="absolute inset-0 opacity-[0.015]"
@@ -186,7 +483,7 @@ export function LoginPage() {
               linear-gradient(to right, currentColor 1px, transparent 1px),
               linear-gradient(to bottom, currentColor 1px, transparent 1px)
             `,
-            backgroundSize: "32px 32px"
+            backgroundSize: "32px 32px",
           }}
         />
 
@@ -202,139 +499,643 @@ export function LoginPage() {
             </span>
           </div>
           <div className="hidden lg:block" />
-          <Button variant="ghost" size="sm" className="text-muted-foreground text-xs">
-            Need help?
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground text-xs"
+            onClick={() => {
+              if (showRegister) {
+                setShowRegister(false);
+                setIsVerified(false);
+                setShowCreateForm(false);
+                setEmail("");
+                setPassword("");
+                setError("");
+                setLoginFieldErrors({});
+                setFieldErrors({});
+                setVerifyFieldErrors({});
+                setRegisterData({
+                  email: "",
+                  password: "",
+                });
+                setNewAccountData({
+                  name: "",
+                  email: "",
+                  phoneNumber: "",
+                  facilityName: "",
+                  facilityAddress: "",
+                  accountPassword: "",
+                  verifyPassword: "",
+                });
+              }
+            }}
+          >
+            {showRegister ? "Back to login" : "Need help?"}
           </Button>
         </div>
 
-        {/* Login Form Container */}
-        <div className="relative z-10 flex-1 flex items-center justify-center px-8 pb-12 lg:px-12">
+        {/* Form Container */}
+        <div className="relative z-10 flex-1 flex justify-center px-8 pb-12 lg:px-12 py-8">
           <div
             className="w-full max-w-sm animate-in fade-in slide-in-from-right-4 duration-700 fill-mode-both"
             style={{ animationDelay: "200ms" }}
           >
-            {/* Form Header */}
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold tracking-tight text-foreground mb-2">
-                Welcome back
-              </h2>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Sign in to access your treatment facility dashboard
-              </p>
-            </div>
-
-            {/* Login Form */}
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-foreground font-medium">
-                  Email address
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="operator@facility.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="h-11"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password" className="text-foreground font-medium">
-                    Password
-                  </Label>
-                  <button
-                    type="button"
-                    className="text-xs text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    Forgot password?
-                  </button>
+            {!showRegister ? (
+              <>
+                {/* Login Form Header */}
+                <div className="mb-8">
+                  <h2 className="text-2xl font-bold tracking-tight text-foreground mb-2">
+                    Welcome back
+                  </h2>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Sign in to access your treatment facility dashboard.
+                  </p>
                 </div>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="h-11 pr-11"
-                    required
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-1 top-1/2 -translate-y-1/2 p-2 text-muted-foreground hover:text-foreground transition-colors rounded-md"
-                    onClick={() => setShowPassword(!showPassword)}
+
+                {/* Login Form */}
+                <form
+                  onSubmit={handleSignIn}
+                  className="space-y-5"
+                  autoComplete="off"
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between h-5">
+                      <Label
+                        htmlFor="email"
+                        className="text-foreground font-medium"
+                      >
+                        Email address
+                      </Label>
+                      <span
+                        className={`text-xs text-destructive transition-opacity duration-300 ${loginFieldErrors.email ? "opacity-100 animate-in fade-in slide-in-from-right-1" : "opacity-0"}`}
+                      >
+                        {loginFieldErrors.email || "\u00A0"}
+                      </span>
+                    </div>
+                    <Input
+                      id="email"
+                      type="text"
+                      placeholder="operator@facility.com"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        setLoginFieldErrors((prev) => {
+                          const newErrors = { ...prev };
+                          delete newErrors.email;
+                          return newErrors;
+                        });
+                      }}
+                      onFocus={moveCursorToEnd}
+                      className="h-11"
+                      autoComplete="off"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between h-5">
+                      <Label
+                        htmlFor="password"
+                        className="text-foreground font-medium"
+                      >
+                        Password
+                      </Label>
+                      <span
+                        className={`text-xs text-destructive transition-opacity duration-300 ${loginFieldErrors.password ? "opacity-100 animate-in fade-in slide-in-from-right-1" : "opacity-0"}`}
+                      >
+                        {loginFieldErrors.password || "\u00A0"}
+                      </span>
+                    </div>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="Enter your password"
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        setLoginFieldErrors((prev) => {
+                          const newErrors = { ...prev };
+                          delete newErrors.password;
+                          return newErrors;
+                        });
+                      }}
+                      onFocus={moveCursorToEnd}
+                      className="h-11"
+                      autoComplete="off"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-end">
+                    <button
+                      type="button"
+                      className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
+
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="w-full h-11 font-semibold gap-2 group"
+                    disabled={isLoading}
                   >
-                    {showPassword ? (
-                      <EyeOff className="w-4 h-4" />
+                    {isLoading ? (
+                      <span className="flex items-center gap-2">
+                        <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                        Signing in...
+                      </span>
                     ) : (
-                      <Eye className="w-4 h-4" />
+                      <>
+                        Sign in to dashboard
+                        <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                      </>
                     )}
-                  </button>
+                  </Button>
+                </form>
+
+                {/* Divider */}
+                <div className="relative my-8">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-border" />
+                  </div>
+                  <div className="relative flex justify-center">
+                    <span className="bg-background px-4 text-xs text-muted-foreground uppercase tracking-wider">
+                      New to the platform?
+                    </span>
+                  </div>
                 </div>
-              </div>
 
-              <Button
-                type="submit"
-                size="lg"
-                className="w-full h-11 font-semibold gap-2 group"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <span className="flex items-center gap-2">
-                    <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                    Signing in...
-                  </span>
-                ) : (
-                  <>
-                    Sign in to dashboard
+                {/* Help Section */}
+                <div className="text-center space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Accounts are provisioned by your facility administrator.
+                    <br />
+                    Contact them for access credentials.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="w-full h-10 gap-2"
+                    onClick={() => setShowRegister(true)}
+                  >
+                    Proceed
                     <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-                  </>
+                  </Button>
+                </div>
+
+                {/* Footer Links */}
+                <div className="flex items-center justify-center gap-4 mt-10 text-xs text-muted-foreground">
+                  <a
+                    href="#"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    Terms
+                  </a>
+                  <span className="w-1 h-1 rounded-full bg-border" />
+                  <a
+                    href="#"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    Privacy
+                  </a>
+                  <span className="w-1 h-1 rounded-full bg-border" />
+                  <a
+                    href="#"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    Support
+                  </a>
+                </div>
+              </>
+            ) : !isVerified ? (
+              <>
+                {/* Verification Form Header */}
+                <div className="mb-8">
+                  <h2 className="text-2xl font-bold tracking-tight text-foreground mb-2">
+                    Verify account
+                  </h2>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Creating an account requires facility administrator
+                    credentials.
+                  </p>
+                </div>
+
+                {/* Error Message */}
+                {error && (
+                  <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg animate-in fade-in slide-in-from-top-1 duration-300">
+                    <p className="text-[1.7vh] text-destructive">{error}</p>
+                  </div>
                 )}
-              </Button>
-            </form>
 
-            {/* Divider */}
-            <div className="relative my-8">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center">
-                <span className="bg-background px-4 text-xs text-muted-foreground uppercase tracking-wider">
-                  New to the platform?
-                </span>
-              </div>
-            </div>
+                {/* Verification Form */}
+                <form
+                  onSubmit={handleVerification}
+                  className="space-y-5"
+                  autoComplete="off"
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between h-5">
+                      <Label
+                        htmlFor="email"
+                        className="text-foreground font-medium"
+                      >
+                        Email address
+                      </Label>
+                      <span
+                        className={`text-xs text-destructive transition-opacity duration-300 ${verifyFieldErrors.email ? "opacity-100 animate-in fade-in slide-in-from-right-1" : "opacity-0"}`}
+                      >
+                        {verifyFieldErrors.email || "\u00A0"}
+                      </span>
+                    </div>
+                    <Input
+                      id="email"
+                      type="text"
+                      placeholder="Enter email"
+                      value={registerData.email}
+                      onChange={(e) =>
+                        handleRegisterChange("email", e.target.value)
+                      }
+                      onFocus={moveCursorToEnd}
+                      className="h-11"
+                    />
+                  </div>
 
-            {/* Help Section */}
-            <div className="text-center space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Accounts are provisioned by your facility administrator.
-                <br />
-                Contact them for access credentials.
-              </p>
-              <Button variant="outline" size="lg" className="w-full h-10 gap-2">
-                <Building2 className="w-4 h-4" />
-                Contact facility admin
-              </Button>
-            </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between h-5">
+                      <Label
+                        htmlFor="password"
+                        className="text-foreground font-medium"
+                      >
+                        Password
+                      </Label>
+                      <span
+                        className={`text-xs text-destructive transition-opacity duration-300 ${verifyFieldErrors.password ? "opacity-100 animate-in fade-in slide-in-from-right-1" : "opacity-0"}`}
+                      >
+                        {verifyFieldErrors.password || "\u00A0"}
+                      </span>
+                    </div>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="Enter password"
+                      value={registerData.password}
+                      onChange={(e) =>
+                        handleRegisterChange("password", e.target.value)
+                      }
+                      onFocus={moveCursorToEnd}
+                      className="h-11"
+                    />
+                  </div>
 
-            {/* Footer Links */}
-            <div className="flex items-center justify-center gap-4 mt-10 text-xs text-muted-foreground">
-              <a href="#" className="hover:text-foreground transition-colors">
-                Terms
-              </a>
-              <span className="w-1 h-1 rounded-full bg-border" />
-              <a href="#" className="hover:text-foreground transition-colors">
-                Privacy
-              </a>
-              <span className="w-1 h-1 rounded-full bg-border" />
-              <a href="#" className="hover:text-foreground transition-colors">
-                Support
-              </a>
-            </div>
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="w-full h-11 font-semibold gap-2 group"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <span className="flex items-center gap-2">
+                        <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                        Verifying account...
+                      </span>
+                    ) : (
+                      <>
+                        Verify account
+                        <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                      </>
+                    )}
+                  </Button>
+                </form>
+
+                {/* Footer Links */}
+                <div className="flex items-center justify-center gap-4 mt-10 text-xs text-muted-foreground">
+                  <a
+                    href="#"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    Terms
+                  </a>
+                  <span className="w-1 h-1 rounded-full bg-border" />
+                  <a
+                    href="#"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    Privacy
+                  </a>
+                  <span className="w-1 h-1 rounded-full bg-border" />
+                  <a
+                    href="#"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    Support
+                  </a>
+                </div>
+              </>
+            ) : !showCreateForm ? (
+              <>
+                {/* Verification Success */}
+                <div className="mb-8">
+                  <div className="mb-4 flex justify-center">
+                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                      <CheckCircle2 className="w-8 h-8 text-primary" />
+                    </div>
+                  </div>
+                  <h2 className="text-2xl font-bold tracking-tight text-foreground mb-2 text-center">
+                    Verification successful
+                  </h2>
+                  <p className="text-sm text-muted-foreground leading-relaxed text-center">
+                    Choose an option to continue.
+                  </p>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="space-y-3">
+                  <Button
+                    size="lg"
+                    className="w-full h-11 font-semibold gap-2 group"
+                    onClick={() => {
+                      setShowRegister(false);
+                      setIsVerified(false);
+                      setRegisterData({
+                        email: "",
+                        password: "",
+                      });
+                      setEmail("");
+                      setPassword("");
+                      setError("");
+                      setLoginFieldErrors({});
+                      setVerifyFieldErrors({});
+                    }}
+                  >
+                    Login
+                    <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="w-full h-11 font-semibold gap-2"
+                    onClick={() => setShowCreateForm(true)}
+                  >
+                    <Plus className="w-4 h-4" />
+                    Create Account
+                  </Button>
+                </div>
+
+                {/* Footer Links */}
+                <div className="flex items-center justify-center gap-4 mt-10 text-xs text-muted-foreground">
+                  <a
+                    href="#"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    Terms
+                  </a>
+                  <span className="w-1 h-1 rounded-full bg-border" />
+                  <a
+                    href="#"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    Privacy
+                  </a>
+                  <span className="w-1 h-1 rounded-full bg-border" />
+                  <a
+                    href="#"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    Support
+                  </a>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Create Account Form Header */}
+                <div className="mb-8">
+                  <h2 className="text-2xl font-bold tracking-tight text-foreground mb-2">
+                    Create account
+                  </h2>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Enter new treater account details.
+                  </p>
+                </div>
+
+                {/* Create Account Form */}
+                <form
+                  onSubmit={handleCreateAccount}
+                  className="space-y-5"
+                  autoComplete="off"
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between h-5">
+                      <Label
+                        htmlFor="facilityName"
+                        className="text-foreground font-medium"
+                      >
+                        Facility name
+                      </Label>
+                      <span
+                        className={`text-xs text-destructive transition-opacity duration-300 ${fieldErrors.facilityName ? "opacity-100 animate-in fade-in slide-in-from-right-1" : "opacity-0"}`}
+                      >
+                        {fieldErrors.facilityName || "\u00A0"}
+                      </span>
+                    </div>
+                    <Input
+                      id="facilityName"
+                      type="text"
+                      placeholder="ABC Facility"
+                      value={newAccountData.facilityName}
+                      onChange={(e) =>
+                        handleNewAccountChange("facilityName", e.target.value)
+                      }
+                      onFocus={moveCursorToEnd}
+                      className="h-11"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between h-5">
+                      <Label
+                        htmlFor="facilityAddress"
+                        className="text-foreground font-medium"
+                      >
+                        Facility address
+                      </Label>
+                      <span
+                        className={`text-xs text-destructive transition-opacity duration-300 ${fieldErrors.facilityAddress ? "opacity-100 animate-in fade-in slide-in-from-right-1" : "opacity-0"}`}
+                      >
+                        {fieldErrors.facilityName || "\u00A0"}
+                      </span>
+                    </div>
+                    <Input
+                      id="facilityAddress"
+                      type="text"
+                      placeholder="Cebu City"
+                      value={newAccountData.facilityAddress}
+                      onChange={(e) =>
+                        handleNewAccountChange(
+                          "facilityAddress",
+                          e.target.value
+                        )
+                      }
+                      onFocus={moveCursorToEnd}
+                      className="h-11"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between h-5">
+                      <Label
+                        htmlFor="accountEmail"
+                        className="text-foreground font-medium"
+                      >
+                        Email address
+                      </Label>
+                      <span
+                        className={`text-xs text-destructive transition-opacity duration-300 ${fieldErrors.email ? "opacity-100 animate-in fade-in slide-in-from-right-1" : "opacity-0"}`}
+                      >
+                        {fieldErrors.email || "\u00A0"}
+                      </span>
+                    </div>
+                    <Input
+                      id="accountEmail"
+                      type="text"
+                      placeholder="admin@facility.com"
+                      value={newAccountData.email}
+                      onChange={(e) =>
+                        handleNewAccountChange("email", e.target.value)
+                      }
+                      onFocus={moveCursorToEnd}
+                      className="h-11"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between h-5">
+                      <Label
+                        htmlFor="phoneNumber"
+                        className="text-foreground font-medium"
+                      >
+                        Phone number
+                      </Label>
+                      <span
+                        className={`text-xs text-destructive transition-opacity duration-300 ${fieldErrors.phoneNumber ? "opacity-100 animate-in fade-in slide-in-from-right-1" : "opacity-0"}`}
+                      >
+                        {fieldErrors.phoneNumber || "\u00A0"}
+                      </span>
+                    </div>
+                    <Input
+                      id="phoneNumber"
+                      type="text"
+                      placeholder="09171234567"
+                      value={newAccountData.phoneNumber}
+                      onChange={(e) =>
+                        handleNewAccountChange("phoneNumber", e.target.value)
+                      }
+                      onFocus={moveCursorToEnd}
+                      className="h-11"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between h-5">
+                      <Label
+                        htmlFor="accountPassword"
+                        className="text-foreground font-medium"
+                      >
+                        Password
+                      </Label>
+                      <span
+                        className={`text-xs text-destructive transition-opacity duration-300 ${fieldErrors.accountPassword ? "opacity-100 animate-in fade-in slide-in-from-right-1" : "opacity-0"}`}
+                      >
+                        {fieldErrors.accountPassword || "\u00A0"}
+                      </span>
+                    </div>
+                    <Input
+                      id="accountPassword"
+                      type="password"
+                      placeholder="Enter password"
+                      value={newAccountData.accountPassword}
+                      onChange={(e) =>
+                        handleNewAccountChange(
+                          "accountPassword",
+                          e.target.value
+                        )
+                      }
+                      onFocus={moveCursorToEnd}
+                      className="h-11"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between h-5">
+                      <Label
+                        htmlFor="verifyPassword"
+                        className="text-foreground font-medium"
+                      >
+                        Verify password
+                      </Label>
+                      <span
+                        className={`text-xs text-destructive transition-opacity duration-300 ${fieldErrors.verifyPassword ? "opacity-100 animate-in fade-in slide-in-from-right-1" : "opacity-0"}`}
+                      >
+                        {fieldErrors.verifyPassword || "\u00A0"}
+                      </span>
+                    </div>
+                    <Input
+                      id="verifyPassword"
+                      type="password"
+                      placeholder="Re-enter password"
+                      value={newAccountData.verifyPassword}
+                      onChange={(e) =>
+                        handleNewAccountChange("verifyPassword", e.target.value)
+                      }
+                      onFocus={moveCursorToEnd}
+                      className="h-11"
+                    />
+                  </div>
+
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="w-full h-11 font-semibold gap-2 group"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <span className="flex items-center gap-2">
+                        <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                        Creating account...
+                      </span>
+                    ) : (
+                      <>
+                        Create account
+                        <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                      </>
+                    )}
+                  </Button>
+                </form>
+
+                {/* Footer Links */}
+                <div className="flex items-center justify-center gap-4 mt-10 text-xs text-muted-foreground">
+                  <a
+                    href="#"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    Terms
+                  </a>
+                  <span className="w-1 h-1 rounded-full bg-border" />
+                  <a
+                    href="#"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    Privacy
+                  </a>
+                  <span className="w-1 h-1 rounded-full bg-border" />
+                  <a
+                    href="#"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    Support
+                  </a>
+                </div>
+              </>
+            )}
           </div>
         </div>
 

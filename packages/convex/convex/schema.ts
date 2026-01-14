@@ -1,57 +1,59 @@
 import { defineSchema } from "convex/server";
 import {
-	// Organization tables
-	treaters,
-	generators,
-	haulers,
-	treaterHaulerPartners,
-	// User management
-	users,
-	// Bag inventory
-	bagInventory,
-	bagDistributions,
-	// Waste management
-	wasteBags,
-	wasteStatusHistory,
-	// Collection management
-	collectionRequests,
-	// Treatment
-	treatments,
-	// Disposal
-	disposalBatches,
-	// Certificates
-	treatmentCertificates,
-	disposalCertificates,
+  // Organization tables
+  treaters,
+  generators,
+  haulers,
+  treaterHaulerPartners,
+  organizationLinks,
+  // User management
+  users,
+  // Bag inventory
+  bagInventory,
+  bagDistributions,
+  // Waste management
+  wasteBags,
+  wasteStatusHistory,
+  // Collection management
+  collectionRequests,
+  // Treatment
+  treatments,
+  // Disposal
+  disposalBatches,
+  // Certificates
+  treatmentCertificates,
+  disposalCertificates,
 } from "./schema/index";
 
 export default defineSchema({
-	// Organization tables
-	treaters,
-	generators,
-	haulers,
-	treaterHaulerPartners,
+  // Organization tables
+  treaters,
+  generators,
+  haulers,
+  treaterHaulerPartners,
+  organizationLinks,
 
-	// User management
-	users,
+  // User management
+  users,
 
-	// Bag inventory
-	bagInventory,
-	bagDistributions,
+  // Bag inventory
+  bagInventory,
+  bagDistributions,
 
-	// Waste management
-	wasteBags,
-	wasteStatusHistory,
+  // Waste management
+  wasteBags,
+  wasteStatusHistory,
 
-	// Collection management
-	collectionRequests,
+  // Collection management
+  collectionRequests,
 
-	// Treatment
-	treatments,
+  // Treatment
+  treatments,
 
-	// Disposal
-	disposalBatches,
+  // Disposal
+  disposalBatches,
 
-	// Certificates
-	treatmentCertificates,
-	disposalCertificates,
+  // Certificates
+  treatmentCertificates,
+  disposalCertificates,
 });
