@@ -923,6 +923,12 @@ export function LoginPage() {
                   className="space-y-5"
                   autoComplete="off"
                 >
+                  <div className="pt-2">
+                    <h3 className="text-sm font-semibold text-foreground mb-4">
+                      Facility Information
+                    </h3>
+                  </div>
+
                   <div className="space-y-2">
                     <div className="flex items-center justify-between h-5">
                       <Label
@@ -978,6 +984,15 @@ export function LoginPage() {
                       onFocus={moveCursorToEnd}
                       className="h-11"
                     />
+                  </div>
+
+                  <div className="pt-2">
+                    <h3 className="text-sm font-semibold text-foreground mb-1">
+                      User Information
+                    </h3>
+                    <p className="text-xs text-muted-foreground mb-4">
+                      (This will be used for sign-in)
+                    </p>
                   </div>
 
                   <div className="space-y-2">
