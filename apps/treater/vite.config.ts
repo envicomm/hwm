@@ -8,10 +8,8 @@ export default defineConfig({
   server: {
     port: 3002,
   },
-  plugins: [
-    viteTsConfigPaths(),
-    tailwindcss(),
-    tanstackStart(),
-    react(),
-  ],
+  plugins: [viteTsConfigPaths(), tailwindcss(), tanstackStart(), react()],
+  ssr: {
+    noExternal: ["@convex-dev/better-auth"],
+  },
 });
