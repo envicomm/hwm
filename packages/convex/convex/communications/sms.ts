@@ -6,7 +6,7 @@ export const sendSMS = action({
     to: v.string(),
     message: v.string(),
   },
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     const accountSid = process.env.TWILIO_ACCOUNT_SID;
     const authToken = process.env.TWILIO_AUTH_TOKEN;
     const fromNumber = process.env.TWILIO_PHONE_NUMBER;
@@ -36,7 +36,7 @@ export const sendSMS = action({
       throw new Error(`Failed to send SMS: ${error}`);
     }
 
-    const result = await response.json();
+    const result = (await response.json()) as { sid: string };
     return { success: true, sid: result.sid };
   },
 });
@@ -86,7 +86,7 @@ export const sendSMSToUser = action({
       throw new Error(`Failed to send SMS: ${error}`);
     }
 
-    const result = await response.json();
+    const result = (await response.json()) as { sid: string };
     return { success: true, sid: result.sid };
   },
 });

@@ -13,8 +13,10 @@
     "./*": "./convex/*"
   },
   "dependencies": {
+    "@convex-dev/better-auth": "^0.10.10",
     "@hwm/types": "workspace:*",
-    "convex": "^1.22.0"
+    "better-auth": "^1.4.9",
+    "convex": "^1.31.5"
   },
   "devDependencies": {
     "@hwm/typescript-config": "workspace:*",

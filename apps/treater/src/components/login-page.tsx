@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/auth-context";
 import { api } from "@hwm/convex";
+import { signUp } from "@/lib/auth";
 import {
   FlaskConical,
   Shield,
@@ -67,6 +68,7 @@ export function LoginPage() {
   const createTreaterAccount = useMutation(
     api.treaters.mutations.createAccount
   );
+  const createTreaterUser = useMutation(api.users.mutations.createTreaterUser);
 
   const isValidEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -191,6 +193,7 @@ export function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
     setFormErrors((prev) => ({ ...prev, create: {} }));
+    setError("");
 
     // Validate all required fields
     const {
@@ -250,6 +253,8 @@ export function LoginPage() {
     // Validate password
     if (!accountPassword?.trim()) {
       errors.accountPassword = "Required";
+    } else if (accountPassword.length < 8) {
+      errors.accountPassword = "Min 8 characters";
     }
 
     // Validate verify password
@@ -267,7 +272,7 @@ export function LoginPage() {
     }
 
     try {
-      // Create the treater account
+      // Step 1: Create the treater account in Convex
       const treaterId = await createTreaterAccount({
         facilityName,
         facilityAddress,
@@ -275,10 +280,42 @@ export function LoginPage() {
         contactPhone: phoneNumber,
       });
 
-      console.log("Treater account created:", treaterId);
+      // Step 2: Sign up with Better Auth (this creates the user in better-auth tables)
+      const { data, error: signUpError } = await signUp.email({
+        email,
+        password: accountPassword,
+        name: fullName,
+        callbackURL: "/dashboard",
+      });
 
-      // TODO: Create user account with better-auth using accountPassword
-      // For now, just navigate to dashboard
+      if (signUpError) {
+        console.error("Better Auth sign up error:", signUpError);
+        // If sign up fails, we should ideally rollback the treater creation
+        // For now, just show error to user
+        if (signUpError.message?.includes("already exists")) {
+          setFormErrors((prev) => ({
+            ...prev,
+            create: { email: "Email already in use" },
+          }));
+        } else {
+          setError(signUpError.message || "Failed to create account. Please try again.");
+        }
+        setIsLoading(false);
+        return;
+      }
+
+      // Step 3: Create the user record in the users table and link to treater
+      if (data?.user) {
+        await createTreaterUser({
+          name: fullName,
+          email,
+          phone: phoneNumber,
+          treaterId,
+        });
+      }
+
+      // Account created successfully - user should verify email
+      // For now, navigate to dashboard (they'll be redirected to login if not verified)
       setIsLoading(false);
       navigate({ to: "/dashboard" });
     } catch (err) {

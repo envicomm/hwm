@@ -1,6 +1,6 @@
 import { createClient, type GenericCtx } from "@convex-dev/better-auth";
 import { convex, crossDomain } from "@convex-dev/better-auth/plugins";
-import { organization, admin } from "better-auth/plugins";
+import { organization } from "better-auth/plugins";
 import { betterAuth } from "better-auth";
 import { components } from "./_generated/api";
 import type { DataModel } from "./_generated/dataModel";
@@ -27,7 +27,6 @@ const trustedOrigins = isProduction
 		];
 
 // Component client for integrating Convex with Better Auth
-// @ts-expect-error - betterAuth component will be available after running convex dev
 export const authComponent = createClient<DataModel>(components.betterAuth);
 
 // Create the Better Auth instance with all plugins
@@ -263,11 +262,10 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
 				},
 			}),
 
-			// Admin plugin for user management, ban, impersonation
-			admin({
-				defaultRole: "user",
-				adminRoles: ["admin"],
-			}),
+			// NOTE: Admin plugin removed temporarily because its schema fields (banned, role)
+			// are not in the default betterAuth component schema. To use admin features,
+			// set up a local Better Auth component install with custom schema.
+			// See: https://labs.convex.dev/better-auth/features/local-install
 		],
 	});
 };

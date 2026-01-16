@@ -8,7 +8,7 @@ export const sendEmail = action({
     html: v.string(),
     text: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) {
       throw new Error("RESEND_API_KEY is not configured");
@@ -34,7 +34,7 @@ export const sendEmail = action({
       throw new Error(`Failed to send email: ${error}`);
     }
 
-    const result = await response.json();
+    const result = (await response.json()) as { id: string };
     return { success: true, id: result.id };
   },
 });
@@ -82,7 +82,7 @@ export const sendEmailToUser = action({
       throw new Error(`Failed to send email: ${error}`);
     }
 
-    const result = await response.json();
+    const result = (await response.json()) as { id: string };
     return { success: true, id: result.id };
   },
 });
