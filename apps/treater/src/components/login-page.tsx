@@ -19,43 +19,47 @@ import {
 } from "lucide-react";
 
 export function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [registerData, setRegisterData] = useState({
-    email: "",
-    password: "",
-  });
-  const [newAccountData, setNewAccountData] = useState({
-    fullName: "",
-    email: "",
-    phoneNumber: "",
-    facilityName: "",
-    facilityAddress: "",
-    accountPassword: "",
-    verifyPassword: "",
+  const [formData, setFormData] = useState({
+    login: {
+      email: "",
+      password: "",
+    },
+    verify: {
+      email: "",
+      password: "",
+    },
+    create: {
+      fullName: "",
+      email: "",
+      phoneNumber: "",
+      facilityName: "",
+      facilityAddress: "",
+      accountPassword: "",
+      verifyPassword: "",
+    },
   });
   const [error, setError] = useState("");
-  const [loginFieldErrors, setLoginFieldErrors] = useState<{
-    email?: string;
-    password?: string;
-  }>({});
-  const [fieldErrors, setFieldErrors] = useState<{
-    facilityName?: string;
-    facilityAddress?: string;
-    fullName?: string;
-    email?: string;
-    phoneNumber?: string;
-    accountPassword?: string;
-    verifyPassword?: string;
-  }>({});
-  const [verifyFieldErrors, setVerifyFieldErrors] = useState<{
-    email?: string;
-    password?: string;
-  }>({});
+  const [formErrors, setFormErrors] = useState<{
+    login: { email?: string; password?: string };
+    verify: { email?: string; password?: string };
+    create: {
+      facilityName?: string;
+      facilityAddress?: string;
+      fullName?: string;
+      email?: string;
+      phoneNumber?: string;
+      accountPassword?: string;
+      verifyPassword?: string;
+    };
+  }>({
+    login: {},
+    verify: {},
+    create: {},
+  });
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -79,7 +83,7 @@ export function LoginPage() {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoginFieldErrors({});
+    setFormErrors((prev) => ({ ...prev, login: {} }));
 
     const errors: {
       email?: string;
@@ -87,34 +91,37 @@ export function LoginPage() {
     } = {};
 
     // Validate email
-    if (!email?.trim()) {
+    if (!formData.login.email?.trim()) {
       errors.email = "Required";
-    } else if (!isValidEmail(email)) {
+    } else if (!isValidEmail(formData.login.email)) {
       errors.email = "Invalid email";
     }
 
     // Validate password
-    if (!password?.trim()) {
+    if (!formData.login.password?.trim()) {
       errors.password = "Required";
     }
 
     // If there are errors, set them and return
     if (Object.keys(errors).length > 0) {
-      setLoginFieldErrors(errors);
+      setFormErrors((prev) => ({ ...prev, login: errors }));
       setIsLoading(false);
       return;
     }
 
     setIsLoading(true);
     try {
-      await login(email, password);
+      await login(formData.login.email, formData.login.password);
       navigate({ to: "/dashboard" });
     } catch (err) {
       // Set error on both fields for invalid login
-      setLoginFieldErrors({
-        email: "Invalid credentials",
-        password: "Invalid credentials",
-      });
+      setFormErrors((prev) => ({
+        ...prev,
+        login: {
+          email: "Invalid credentials",
+          password: "Invalid credentials",
+        },
+      }));
     } finally {
       setIsLoading(false);
     }
@@ -123,7 +130,7 @@ export function LoginPage() {
   const handleVerification = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setVerifyFieldErrors({});
+    setFormErrors((prev) => ({ ...prev, verify: {} }));
 
     const errors: {
       email?: string;
@@ -131,20 +138,20 @@ export function LoginPage() {
     } = {};
 
     // Validate email
-    if (!registerData.email?.trim()) {
+    if (!formData.verify.email?.trim()) {
       errors.email = "Required";
-    } else if (!isValidEmail(registerData.email)) {
+    } else if (!isValidEmail(formData.verify.email)) {
       errors.email = "Invalid email";
     }
 
     // Validate password
-    if (!registerData.password?.trim()) {
+    if (!formData.verify.password?.trim()) {
       errors.password = "Required";
     }
 
     // If there are errors, set them and return
     if (Object.keys(errors).length > 0) {
-      setVerifyFieldErrors(errors);
+      setFormErrors((prev) => ({ ...prev, verify: errors }));
       setIsLoading(false);
       return;
     }
@@ -152,16 +159,19 @@ export function LoginPage() {
     try {
       // Verify credentials against environment variables
       const result = await verifyCredentials({
-        email: registerData.email,
-        password: registerData.password,
+        email: formData.verify.email,
+        password: formData.verify.password,
       });
 
       if (!result.success) {
         // Set error on both fields for invalid credentials
-        setVerifyFieldErrors({
-          email: "Invalid credentials",
-          password: "Invalid credentials",
-        });
+        setFormErrors((prev) => ({
+          ...prev,
+          verify: {
+            email: "Invalid credentials",
+            password: "Invalid credentials",
+          },
+        }));
         setIsLoading(false);
         return;
       }
@@ -180,7 +190,7 @@ export function LoginPage() {
   const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setFieldErrors({});
+    setFormErrors((prev) => ({ ...prev, create: {} }));
 
     // Validate all required fields
     const {
@@ -191,7 +201,7 @@ export function LoginPage() {
       phoneNumber,
       accountPassword,
       verifyPassword,
-    } = newAccountData;
+    } = formData.create;
 
     const errors: {
       facilityName?: string;
@@ -251,7 +261,7 @@ export function LoginPage() {
 
     // If there are errors, set them and return
     if (Object.keys(errors).length > 0) {
-      setFieldErrors(errors);
+      setFormErrors((prev) => ({ ...prev, create: errors }));
       setIsLoading(false);
       return;
     }
@@ -278,17 +288,33 @@ export function LoginPage() {
     }
   };
 
-  const handleRegisterChange = (field: string, value: string) => {
+  const handleLoginFields = (field: "email" | "password", value: string) => {
     // Clear field-specific error when user starts typing
-    setVerifyFieldErrors((prev) => {
-      const newErrors = { ...prev };
-      delete newErrors[field as keyof typeof newErrors];
-      return newErrors;
+    setFormErrors((prev) => {
+      const newErrors = { ...prev.login };
+      delete newErrors[field];
+      return { ...prev, login: newErrors };
     });
-    setRegisterData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({
+      ...prev,
+      login: { ...prev.login, [field]: value },
+    }));
   };
 
-  const handleNewAccountChange = (field: string, value: string) => {
+  const handleVerifyAccountFields = (field: string, value: string) => {
+    // Clear field-specific error when user starts typing
+    setFormErrors((prev) => {
+      const newErrors = { ...prev.verify };
+      delete newErrors[field as keyof typeof newErrors];
+      return { ...prev, verify: newErrors };
+    });
+    setFormData((prev) => ({
+      ...prev,
+      verify: { ...prev.verify, [field]: value },
+    }));
+  };
+
+  const handleCreateAccountFields = (field: string, value: string) => {
     // Special validation for phone number
     if (field === "phoneNumber") {
       // Only allow digits
@@ -306,23 +332,29 @@ export function LoginPage() {
 
       // Only clear error if there's actual valid input
       if (validatedValue) {
-        setFieldErrors((prev) => {
-          const newErrors = { ...prev };
+        setFormErrors((prev) => {
+          const newErrors = { ...prev.create };
           delete newErrors[field as keyof typeof newErrors];
-          return newErrors;
+          return { ...prev, create: newErrors };
         });
       }
 
-      setNewAccountData((prev) => ({ ...prev, [field]: validatedValue }));
+      setFormData((prev) => ({
+        ...prev,
+        create: { ...prev.create, [field]: validatedValue },
+      }));
     } else {
       // Clear field-specific error when user starts typing
-      setFieldErrors((prev) => {
-        const newErrors = { ...prev };
+      setFormErrors((prev) => {
+        const newErrors = { ...prev.create };
         delete newErrors[field as keyof typeof newErrors];
-        return newErrors;
+        return { ...prev, create: newErrors };
       });
 
-      setNewAccountData((prev) => ({ ...prev, [field]: value }));
+      setFormData((prev) => ({
+        ...prev,
+        create: { ...prev.create, [field]: value },
+      }));
     }
   };
 
@@ -529,24 +561,24 @@ export function LoginPage() {
                 setShowRegister(false);
                 setIsVerified(false);
                 setShowCreateForm(false);
-                setEmail("");
-                setPassword("");
                 setError("");
-                setLoginFieldErrors({});
-                setFieldErrors({});
-                setVerifyFieldErrors({});
-                setRegisterData({
-                  email: "",
-                  password: "",
+                setFormErrors({
+                  login: {},
+                  verify: {},
+                  create: {},
                 });
-                setNewAccountData({
-                  fullName: "",
-                  email: "",
-                  phoneNumber: "",
-                  facilityName: "",
-                  facilityAddress: "",
-                  accountPassword: "",
-                  verifyPassword: "",
+                setFormData({
+                  login: { email: "", password: "" },
+                  verify: { email: "", password: "" },
+                  create: {
+                    fullName: "",
+                    email: "",
+                    phoneNumber: "",
+                    facilityName: "",
+                    facilityAddress: "",
+                    accountPassword: "",
+                    verifyPassword: "",
+                  },
                 });
               }
             }}
@@ -588,24 +620,17 @@ export function LoginPage() {
                         Email address
                       </Label>
                       <span
-                        className={`text-xs text-destructive transition-opacity duration-300 ${loginFieldErrors.email ? "opacity-100 animate-in fade-in slide-in-from-right-1" : "opacity-0"}`}
+                        className={`text-xs text-destructive transition-opacity duration-300 ${formErrors.login.email ? "opacity-100 animate-in fade-in slide-in-from-right-1" : "opacity-0"}`}
                       >
-                        {loginFieldErrors.email || "\u00A0"}
+                        {formErrors.login.email || "\u00A0"}
                       </span>
                     </div>
                     <Input
                       id="email"
                       type="text"
                       placeholder="operator@facility.com"
-                      value={email}
-                      onChange={(e) => {
-                        setEmail(e.target.value);
-                        setLoginFieldErrors((prev) => {
-                          const newErrors = { ...prev };
-                          delete newErrors.email;
-                          return newErrors;
-                        });
-                      }}
+                      value={formData.login.email}
+                      onChange={(e) => handleLoginFields("email", e.target.value)}
                       onFocus={moveCursorToEnd}
                       className="h-11"
                       autoComplete="off"
@@ -621,24 +646,19 @@ export function LoginPage() {
                         Password
                       </Label>
                       <span
-                        className={`text-xs text-destructive transition-opacity duration-300 ${loginFieldErrors.password ? "opacity-100 animate-in fade-in slide-in-from-right-1" : "opacity-0"}`}
+                        className={`text-xs text-destructive transition-opacity duration-300 ${formErrors.login.password ? "opacity-100 animate-in fade-in slide-in-from-right-1" : "opacity-0"}`}
                       >
-                        {loginFieldErrors.password || "\u00A0"}
+                        {formErrors.login.password || "\u00A0"}
                       </span>
                     </div>
                     <Input
                       id="password"
                       type="password"
                       placeholder="Enter your password"
-                      value={password}
-                      onChange={(e) => {
-                        setPassword(e.target.value);
-                        setLoginFieldErrors((prev) => {
-                          const newErrors = { ...prev };
-                          delete newErrors.password;
-                          return newErrors;
-                        });
-                      }}
+                      value={formData.login.password}
+                      onChange={(e) =>
+                        handleLoginFields("password", e.target.value)
+                      }
                       onFocus={moveCursorToEnd}
                       className="h-11"
                       autoComplete="off"
@@ -763,18 +783,18 @@ export function LoginPage() {
                         Email address
                       </Label>
                       <span
-                        className={`text-xs text-destructive transition-opacity duration-300 ${verifyFieldErrors.email ? "opacity-100 animate-in fade-in slide-in-from-right-1" : "opacity-0"}`}
+                        className={`text-xs text-destructive transition-opacity duration-300 ${formErrors.verify.email ? "opacity-100 animate-in fade-in slide-in-from-right-1" : "opacity-0"}`}
                       >
-                        {verifyFieldErrors.email || "\u00A0"}
+                        {formErrors.verify.email || "\u00A0"}
                       </span>
                     </div>
                     <Input
                       id="email"
                       type="text"
                       placeholder="Enter email"
-                      value={registerData.email}
+                      value={formData.verify.email}
                       onChange={(e) =>
-                        handleRegisterChange("email", e.target.value)
+                        handleVerifyAccountFields("email", e.target.value)
                       }
                       onFocus={moveCursorToEnd}
                       className="h-11"
@@ -790,18 +810,18 @@ export function LoginPage() {
                         Password
                       </Label>
                       <span
-                        className={`text-xs text-destructive transition-opacity duration-300 ${verifyFieldErrors.password ? "opacity-100 animate-in fade-in slide-in-from-right-1" : "opacity-0"}`}
+                        className={`text-xs text-destructive transition-opacity duration-300 ${formErrors.verify.password ? "opacity-100 animate-in fade-in slide-in-from-right-1" : "opacity-0"}`}
                       >
-                        {verifyFieldErrors.password || "\u00A0"}
+                        {formErrors.verify.password || "\u00A0"}
                       </span>
                     </div>
                     <Input
                       id="password"
                       type="password"
                       placeholder="Enter password"
-                      value={registerData.password}
+                      value={formData.verify.password}
                       onChange={(e) =>
-                        handleRegisterChange("password", e.target.value)
+                        handleVerifyAccountFields("password", e.target.value)
                       }
                       onFocus={moveCursorToEnd}
                       className="h-11"
@@ -877,15 +897,25 @@ export function LoginPage() {
                     onClick={() => {
                       setShowRegister(false);
                       setIsVerified(false);
-                      setRegisterData({
-                        email: "",
-                        password: "",
-                      });
-                      setEmail("");
-                      setPassword("");
                       setError("");
-                      setLoginFieldErrors({});
-                      setVerifyFieldErrors({});
+                      setFormErrors({
+                        login: {},
+                        verify: {},
+                        create: {},
+                      });
+                      setFormData({
+                        login: { email: "", password: "" },
+                        verify: { email: "", password: "" },
+                        create: {
+                          fullName: "",
+                          email: "",
+                          phoneNumber: "",
+                          facilityName: "",
+                          facilityAddress: "",
+                          accountPassword: "",
+                          verifyPassword: "",
+                        },
+                      });
                     }}
                   >
                     Login
@@ -959,18 +989,21 @@ export function LoginPage() {
                         Facility name
                       </Label>
                       <span
-                        className={`text-xs text-destructive transition-opacity duration-300 ${fieldErrors.facilityName ? "opacity-100 animate-in fade-in slide-in-from-right-1" : "opacity-0"}`}
+                        className={`text-xs text-destructive transition-opacity duration-300 ${formErrors.create.facilityName ? "opacity-100 animate-in fade-in slide-in-from-right-1" : "opacity-0"}`}
                       >
-                        {fieldErrors.facilityName || "\u00A0"}
+                        {formErrors.create.facilityName || "\u00A0"}
                       </span>
                     </div>
                     <Input
                       id="facilityName"
                       type="text"
                       placeholder="ABC Facility"
-                      value={newAccountData.facilityName}
+                      value={formData.create.facilityName}
                       onChange={(e) =>
-                        handleNewAccountChange("facilityName", e.target.value)
+                        handleCreateAccountFields(
+                          "facilityName",
+                          e.target.value
+                        )
                       }
                       onFocus={moveCursorToEnd}
                       className="h-11"
@@ -986,18 +1019,18 @@ export function LoginPage() {
                         Facility address
                       </Label>
                       <span
-                        className={`text-xs text-destructive transition-opacity duration-300 ${fieldErrors.facilityAddress ? "opacity-100 animate-in fade-in slide-in-from-right-1" : "opacity-0"}`}
+                        className={`text-xs text-destructive transition-opacity duration-300 ${formErrors.create.facilityAddress ? "opacity-100 animate-in fade-in slide-in-from-right-1" : "opacity-0"}`}
                       >
-                        {fieldErrors.facilityAddress || "\u00A0"}
+                        {formErrors.create.facilityAddress || "\u00A0"}
                       </span>
                     </div>
                     <Input
                       id="facilityAddress"
                       type="text"
                       placeholder="Cebu City"
-                      value={newAccountData.facilityAddress}
+                      value={formData.create.facilityAddress}
                       onChange={(e) =>
-                        handleNewAccountChange(
+                        handleCreateAccountFields(
                           "facilityAddress",
                           e.target.value
                         )
@@ -1025,18 +1058,18 @@ export function LoginPage() {
                         Full name
                       </Label>
                       <span
-                        className={`text-xs text-destructive transition-opacity duration-300 ${fieldErrors.fullName ? "opacity-100 animate-in fade-in slide-in-from-right-1" : "opacity-0"}`}
+                        className={`text-xs text-destructive transition-opacity duration-300 ${formErrors.create.fullName ? "opacity-100 animate-in fade-in slide-in-from-right-1" : "opacity-0"}`}
                       >
-                        {fieldErrors.fullName || "\u00A0"}
+                        {formErrors.create.fullName || "\u00A0"}
                       </span>
                     </div>
                     <Input
                       id="fullName"
                       type="text"
                       placeholder="Juan Dela Cruz"
-                      value={newAccountData.fullName}
+                      value={formData.create.fullName}
                       onChange={(e) =>
-                        handleNewAccountChange("fullName", e.target.value)
+                        handleCreateAccountFields("fullName", e.target.value)
                       }
                       onFocus={moveCursorToEnd}
                       className="h-11"
@@ -1052,18 +1085,18 @@ export function LoginPage() {
                         Email address
                       </Label>
                       <span
-                        className={`text-xs text-destructive transition-opacity duration-300 ${fieldErrors.email ? "opacity-100 animate-in fade-in slide-in-from-right-1" : "opacity-0"}`}
+                        className={`text-xs text-destructive transition-opacity duration-300 ${formErrors.create.email ? "opacity-100 animate-in fade-in slide-in-from-right-1" : "opacity-0"}`}
                       >
-                        {fieldErrors.email || "\u00A0"}
+                        {formErrors.create.email || "\u00A0"}
                       </span>
                     </div>
                     <Input
                       id="accountEmail"
                       type="text"
                       placeholder="admin@facility.com"
-                      value={newAccountData.email}
+                      value={formData.create.email}
                       onChange={(e) =>
-                        handleNewAccountChange("email", e.target.value)
+                        handleCreateAccountFields("email", e.target.value)
                       }
                       onFocus={moveCursorToEnd}
                       className="h-11"
@@ -1079,18 +1112,18 @@ export function LoginPage() {
                         Phone number
                       </Label>
                       <span
-                        className={`text-xs text-destructive transition-opacity duration-300 ${fieldErrors.phoneNumber ? "opacity-100 animate-in fade-in slide-in-from-right-1" : "opacity-0"}`}
+                        className={`text-xs text-destructive transition-opacity duration-300 ${formErrors.create.phoneNumber ? "opacity-100 animate-in fade-in slide-in-from-right-1" : "opacity-0"}`}
                       >
-                        {fieldErrors.phoneNumber || "\u00A0"}
+                        {formErrors.create.phoneNumber || "\u00A0"}
                       </span>
                     </div>
                     <Input
                       id="phoneNumber"
                       type="text"
                       placeholder="09171234567"
-                      value={newAccountData.phoneNumber}
+                      value={formData.create.phoneNumber}
                       onChange={(e) =>
-                        handleNewAccountChange("phoneNumber", e.target.value)
+                        handleCreateAccountFields("phoneNumber", e.target.value)
                       }
                       onFocus={moveCursorToEnd}
                       className="h-11"
@@ -1106,18 +1139,18 @@ export function LoginPage() {
                         Password
                       </Label>
                       <span
-                        className={`text-xs text-destructive transition-opacity duration-300 ${fieldErrors.accountPassword ? "opacity-100 animate-in fade-in slide-in-from-right-1" : "opacity-0"}`}
+                        className={`text-xs text-destructive transition-opacity duration-300 ${formErrors.create.accountPassword ? "opacity-100 animate-in fade-in slide-in-from-right-1" : "opacity-0"}`}
                       >
-                        {fieldErrors.accountPassword || "\u00A0"}
+                        {formErrors.create.accountPassword || "\u00A0"}
                       </span>
                     </div>
                     <Input
                       id="accountPassword"
                       type="password"
                       placeholder="Enter password"
-                      value={newAccountData.accountPassword}
+                      value={formData.create.accountPassword}
                       onChange={(e) =>
-                        handleNewAccountChange(
+                        handleCreateAccountFields(
                           "accountPassword",
                           e.target.value
                         )
@@ -1136,18 +1169,21 @@ export function LoginPage() {
                         Verify password
                       </Label>
                       <span
-                        className={`text-xs text-destructive transition-opacity duration-300 ${fieldErrors.verifyPassword ? "opacity-100 animate-in fade-in slide-in-from-right-1" : "opacity-0"}`}
+                        className={`text-xs text-destructive transition-opacity duration-300 ${formErrors.create.verifyPassword ? "opacity-100 animate-in fade-in slide-in-from-right-1" : "opacity-0"}`}
                       >
-                        {fieldErrors.verifyPassword || "\u00A0"}
+                        {formErrors.create.verifyPassword || "\u00A0"}
                       </span>
                     </div>
                     <Input
                       id="verifyPassword"
                       type="password"
                       placeholder="Re-enter password"
-                      value={newAccountData.verifyPassword}
+                      value={formData.create.verifyPassword}
                       onChange={(e) =>
-                        handleNewAccountChange("verifyPassword", e.target.value)
+                        handleCreateAccountFields(
+                          "verifyPassword",
+                          e.target.value
+                        )
                       }
                       onFocus={moveCursorToEnd}
                       className="h-11"
