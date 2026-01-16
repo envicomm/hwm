@@ -30,7 +30,7 @@ export function LoginPage() {
     password: "",
   });
   const [newAccountData, setNewAccountData] = useState({
-    name: "",
+    fullName: "",
     email: "",
     phoneNumber: "",
     facilityName: "",
@@ -46,6 +46,7 @@ export function LoginPage() {
   const [fieldErrors, setFieldErrors] = useState<{
     facilityName?: string;
     facilityAddress?: string;
+    fullName?: string;
     email?: string;
     phoneNumber?: string;
     accountPassword?: string;
@@ -59,7 +60,9 @@ export function LoginPage() {
   const navigate = useNavigate();
 
   const verifyCredentials = useAction(api.users.queries.verifyAdminCredentials);
-  const createTreaterAccount = useMutation(api.treaters.mutations.createAccount);
+  const createTreaterAccount = useMutation(
+    api.treaters.mutations.createAccount
+  );
 
   const isValidEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -183,6 +186,7 @@ export function LoginPage() {
     const {
       facilityName,
       facilityAddress,
+      fullName,
       email,
       phoneNumber,
       accountPassword,
@@ -192,6 +196,7 @@ export function LoginPage() {
     const errors: {
       facilityName?: string;
       facilityAddress?: string;
+      fullName?: string;
       email?: string;
       phoneNumber?: string;
       accountPassword?: string;
@@ -206,6 +211,11 @@ export function LoginPage() {
     // Validate facility address
     if (!facilityAddress?.trim()) {
       errors.facilityAddress = "Required";
+    }
+
+    // Validate full name
+    if (!fullName?.trim()) {
+      errors.fullName = "Required";
     }
 
     // Validate email
@@ -279,13 +289,6 @@ export function LoginPage() {
   };
 
   const handleNewAccountChange = (field: string, value: string) => {
-    // Clear field-specific error when user starts typing
-    setFieldErrors((prev) => {
-      const newErrors = { ...prev };
-      delete newErrors[field as keyof typeof newErrors];
-      return newErrors;
-    });
-
     // Special validation for phone number
     if (field === "phoneNumber") {
       // Only allow digits
@@ -301,8 +304,24 @@ export function LoginPage() {
         validatedValue = digitsOnly.slice(0, 10);
       }
 
+      // Only clear error if there's actual valid input
+      if (validatedValue) {
+        setFieldErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors[field as keyof typeof newErrors];
+          return newErrors;
+        });
+      }
+
       setNewAccountData((prev) => ({ ...prev, [field]: validatedValue }));
     } else {
+      // Clear field-specific error when user starts typing
+      setFieldErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[field as keyof typeof newErrors];
+        return newErrors;
+      });
+
       setNewAccountData((prev) => ({ ...prev, [field]: value }));
     }
   };
@@ -474,7 +493,9 @@ export function LoginPage() {
       </div>
 
       {/* Right Login Panel */}
-      <div className={`w-full lg:w-[460px] xl:w-[500px] flex flex-col bg-background relative lg:h-screen ${showCreateForm ? 'overflow-y-auto' : 'overflow-y-hidden'}`}>
+      <div
+        className={`w-full lg:w-[460px] xl:w-[500px] flex flex-col bg-background relative lg:h-screen ${showCreateForm ? "overflow-y-auto" : "overflow-y-hidden"}`}
+      >
         {/* Subtle Grid Background */}
         <div
           className="absolute inset-0 opacity-[0.015]"
@@ -519,7 +540,7 @@ export function LoginPage() {
                   password: "",
                 });
                 setNewAccountData({
-                  name: "",
+                  fullName: "",
                   email: "",
                   phoneNumber: "",
                   facilityName: "",
@@ -967,7 +988,7 @@ export function LoginPage() {
                       <span
                         className={`text-xs text-destructive transition-opacity duration-300 ${fieldErrors.facilityAddress ? "opacity-100 animate-in fade-in slide-in-from-right-1" : "opacity-0"}`}
                       >
-                        {fieldErrors.facilityName || "\u00A0"}
+                        {fieldErrors.facilityAddress || "\u00A0"}
                       </span>
                     </div>
                     <Input
@@ -993,6 +1014,33 @@ export function LoginPage() {
                     <p className="text-xs text-muted-foreground mb-4">
                       (This will be used for sign-in)
                     </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between h-5">
+                      <Label
+                        htmlFor="fullName"
+                        className="text-foreground font-medium"
+                      >
+                        Full name
+                      </Label>
+                      <span
+                        className={`text-xs text-destructive transition-opacity duration-300 ${fieldErrors.fullName ? "opacity-100 animate-in fade-in slide-in-from-right-1" : "opacity-0"}`}
+                      >
+                        {fieldErrors.fullName || "\u00A0"}
+                      </span>
+                    </div>
+                    <Input
+                      id="fullName"
+                      type="text"
+                      placeholder="Juan Dela Cruz"
+                      value={newAccountData.fullName}
+                      onChange={(e) =>
+                        handleNewAccountChange("fullName", e.target.value)
+                      }
+                      onFocus={moveCursorToEnd}
+                      className="h-11"
+                    />
                   </div>
 
                   <div className="space-y-2">
