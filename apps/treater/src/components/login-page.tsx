@@ -630,7 +630,9 @@ export function LoginPage() {
                       type="text"
                       placeholder="operator@facility.com"
                       value={formData.login.email}
-                      onChange={(e) => handleLoginFields("email", e.target.value)}
+                      onChange={(e) =>
+                        handleLoginFields("email", e.target.value)
+                      }
                       onFocus={moveCursorToEnd}
                       className="h-11"
                       autoComplete="off"
@@ -722,30 +724,6 @@ export function LoginPage() {
                     Proceed
                     <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
                   </Button>
-                </div>
-
-                {/* Footer Links */}
-                <div className="flex items-center justify-center gap-4 mt-10 text-xs text-muted-foreground">
-                  <a
-                    href="#"
-                    className="hover:text-foreground transition-colors"
-                  >
-                    Terms
-                  </a>
-                  <span className="w-1 h-1 rounded-full bg-border" />
-                  <a
-                    href="#"
-                    className="hover:text-foreground transition-colors"
-                  >
-                    Privacy
-                  </a>
-                  <span className="w-1 h-1 rounded-full bg-border" />
-                  <a
-                    href="#"
-                    className="hover:text-foreground transition-colors"
-                  >
-                    Support
-                  </a>
                 </div>
               </>
             ) : !isVerified ? (
@@ -847,30 +825,6 @@ export function LoginPage() {
                     )}
                   </Button>
                 </form>
-
-                {/* Footer Links */}
-                <div className="flex items-center justify-center gap-4 mt-10 text-xs text-muted-foreground">
-                  <a
-                    href="#"
-                    className="hover:text-foreground transition-colors"
-                  >
-                    Terms
-                  </a>
-                  <span className="w-1 h-1 rounded-full bg-border" />
-                  <a
-                    href="#"
-                    className="hover:text-foreground transition-colors"
-                  >
-                    Privacy
-                  </a>
-                  <span className="w-1 h-1 rounded-full bg-border" />
-                  <a
-                    href="#"
-                    className="hover:text-foreground transition-colors"
-                  >
-                    Support
-                  </a>
-                </div>
               </>
             ) : !showCreateForm ? (
               <>
@@ -930,30 +884,6 @@ export function LoginPage() {
                     <Plus className="w-4 h-4" />
                     Create Account
                   </Button>
-                </div>
-
-                {/* Footer Links */}
-                <div className="flex items-center justify-center gap-4 mt-10 text-xs text-muted-foreground">
-                  <a
-                    href="#"
-                    className="hover:text-foreground transition-colors"
-                  >
-                    Terms
-                  </a>
-                  <span className="w-1 h-1 rounded-full bg-border" />
-                  <a
-                    href="#"
-                    className="hover:text-foreground transition-colors"
-                  >
-                    Privacy
-                  </a>
-                  <span className="w-1 h-1 rounded-full bg-border" />
-                  <a
-                    href="#"
-                    className="hover:text-foreground transition-colors"
-                  >
-                    Support
-                  </a>
                 </div>
               </>
             ) : (
@@ -1209,31 +1139,24 @@ export function LoginPage() {
                     )}
                   </Button>
                 </form>
-
-                {/* Footer Links */}
-                <div className="flex items-center justify-center gap-4 mt-10 text-xs text-muted-foreground">
-                  <a
-                    href="#"
-                    className="hover:text-foreground transition-colors"
-                  >
-                    Terms
-                  </a>
-                  <span className="w-1 h-1 rounded-full bg-border" />
-                  <a
-                    href="#"
-                    className="hover:text-foreground transition-colors"
-                  >
-                    Privacy
-                  </a>
-                  <span className="w-1 h-1 rounded-full bg-border" />
-                  <a
-                    href="#"
-                    className="hover:text-foreground transition-colors"
-                  >
-                    Support
-                  </a>
-                </div>
               </>
+            )}
+
+            {/* Footer Links - Only show on sign in page */}
+            {!showRegister && (
+              <div className="flex items-center justify-center gap-4 mt-10 text-xs text-muted-foreground">
+                <a href="#" className="hover:text-foreground transition-colors">
+                  Terms
+                </a>
+                <span className="w-1 h-1 rounded-full bg-border" />
+                <a href="#" className="hover:text-foreground transition-colors">
+                  Privacy
+                </a>
+                <span className="w-1 h-1 rounded-full bg-border" />
+                <a href="#" className="hover:text-foreground transition-colors">
+                  Support
+                </a>
+              </div>
             )}
           </div>
         </div>
