@@ -24,6 +24,7 @@ export function LoginPage() {
   const [showRegister, setShowRegister] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [accountCreated, setAccountCreated] = useState(false);
   const [formData, setFormData] = useState({
     login: {
       email: "",
@@ -298,7 +299,9 @@ export function LoginPage() {
             create: { email: "Email already in use" },
           }));
         } else {
-          setError(signUpError.message || "Failed to create account. Please try again.");
+          setError(
+            signUpError.message || "Failed to create account. Please try again."
+          );
         }
         setIsLoading(false);
         return;
@@ -314,10 +317,8 @@ export function LoginPage() {
         });
       }
 
-      // Account created successfully - user should verify email
-      // For now, navigate to dashboard (they'll be redirected to login if not verified)
       setIsLoading(false);
-      navigate({ to: "/dashboard" });
+      setAccountCreated(true);
     } catch (err) {
       console.error("Account creation error:", err);
       setError("Failed to create account. Please try again.");
@@ -598,6 +599,7 @@ export function LoginPage() {
                 setShowRegister(false);
                 setIsVerified(false);
                 setShowCreateForm(false);
+                setAccountCreated(false);
                 setError("");
                 setFormErrors({
                   login: {},
@@ -630,7 +632,61 @@ export function LoginPage() {
             className="w-full max-w-sm animate-in fade-in slide-in-from-right-4 duration-700 fill-mode-both"
             style={{ animationDelay: "200ms" }}
           >
-            {!showRegister ? (
+            {accountCreated ? (
+              <>
+                {/* Account Created Success */}
+                <div className="mb-8">
+                  <div className="mb-4 flex justify-center">
+                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                      <CheckCircle2 className="w-8 h-8 text-primary" />
+                    </div>
+                  </div>
+                  <h2 className="text-2xl font-bold tracking-tight text-foreground mb-2 text-center">
+                    Account created successfully
+                  </h2>
+                  <p className="text-sm text-muted-foreground leading-relaxed text-center">
+                    Your account has been created. You can now sign in with your
+                    credentials.
+                  </p>
+                </div>
+
+                {/* Action Button */}
+                <div className="space-y-3">
+                  <Button
+                    size="lg"
+                    className="w-full h-11 font-semibold gap-2 group"
+                    onClick={() => {
+                      setShowRegister(false);
+                      setIsVerified(false);
+                      setShowCreateForm(false);
+                      setAccountCreated(false);
+                      setError("");
+                      setFormErrors({
+                        login: {},
+                        verify: {},
+                        create: {},
+                      });
+                      setFormData({
+                        login: { email: "", password: "" },
+                        verify: { email: "", password: "" },
+                        create: {
+                          fullName: "",
+                          email: "",
+                          phoneNumber: "",
+                          facilityName: "",
+                          facilityAddress: "",
+                          accountPassword: "",
+                          verifyPassword: "",
+                        },
+                      });
+                    }}
+                  >
+                    Back to login
+                    <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                  </Button>
+                </div>
+              </>
+            ) : !showRegister ? (
               <>
                 {/* Login Form Header */}
                 <div className="mb-8">
