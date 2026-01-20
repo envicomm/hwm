@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
 import { useAction, useMutation } from "convex/react";
+import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,10 +16,10 @@ import {
   ArrowRight,
   Clock,
   CheckCircle2,
-  Plus,
 } from "lucide-react";
 
 export function LoginPage() {
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
@@ -62,12 +62,17 @@ export function LoginPage() {
     verify: {},
     create: {},
   });
-  const { login } = useAuth();
-  const navigate = useNavigate();
+  const { login, isAuthenticated, isLoading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      navigate({ to: "/dashboard", replace: true });
+    }
+  }, [isAuthenticated, authLoading, navigate]);
 
   const verifyCredentials = useAction(api.users.queries.verifyAdminCredentials);
   const createTreaterAccount = useMutation(
-    api.treaters.mutations.createAccount
+    api.treaters.mutations.createAccount,
   );
   const createTreaterUser = useMutation(api.users.mutations.createTreaterUser);
 
@@ -108,14 +113,12 @@ export function LoginPage() {
     // If there are errors, set them and return
     if (Object.keys(errors).length > 0) {
       setFormErrors((prev) => ({ ...prev, login: errors }));
-      setIsLoading(false);
       return;
     }
 
     setIsLoading(true);
     try {
       await login(formData.login.email, formData.login.password);
-      navigate({ to: "/dashboard" });
     } catch (err) {
       // Set error on both fields for invalid login
       setFormErrors((prev) => ({
@@ -125,7 +128,6 @@ export function LoginPage() {
           password: "Invalid credentials",
         },
       }));
-    } finally {
       setIsLoading(false);
     }
   };
@@ -179,9 +181,10 @@ export function LoginPage() {
         return;
       }
 
-      // Credentials are valid, show registration form
+      // Credentials are valid, show create account form directly
       console.log("Admin verified:", result.user);
       setIsVerified(true);
+      setShowCreateForm(true);
       setIsLoading(false);
     } catch (err) {
       console.error("Verification error:", err);
@@ -286,7 +289,6 @@ export function LoginPage() {
         email,
         password: accountPassword,
         name: fullName,
-        callbackURL: "/dashboard",
       });
 
       if (signUpError) {
@@ -300,7 +302,8 @@ export function LoginPage() {
           }));
         } else {
           setError(
-            signUpError.message || "Failed to create account. Please try again."
+            signUpError.message ||
+              "Failed to create account. Please try again.",
           );
         }
         setIsLoading(false);
@@ -590,40 +593,42 @@ export function LoginPage() {
             </span>
           </div>
           <div className="hidden lg:block" />
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground text-xs"
-            onClick={() => {
-              if (showRegister) {
-                setShowRegister(false);
-                setIsVerified(false);
-                setShowCreateForm(false);
-                setAccountCreated(false);
-                setError("");
-                setFormErrors({
-                  login: {},
-                  verify: {},
-                  create: {},
-                });
-                setFormData({
-                  login: { email: "", password: "" },
-                  verify: { email: "", password: "" },
-                  create: {
-                    fullName: "",
-                    email: "",
-                    phoneNumber: "",
-                    facilityName: "",
-                    facilityAddress: "",
-                    accountPassword: "",
-                    verifyPassword: "",
-                  },
-                });
-              }
-            }}
-          >
-            {showRegister ? "Back to login" : "Need help?"}
-          </Button>
+          {!accountCreated && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground text-xs"
+              onClick={() => {
+                if (showRegister) {
+                  setShowRegister(false);
+                  setIsVerified(false);
+                  setShowCreateForm(false);
+                  setAccountCreated(false);
+                  setError("");
+                  setFormErrors({
+                    login: {},
+                    verify: {},
+                    create: {},
+                  });
+                  setFormData({
+                    login: { email: "", password: "" },
+                    verify: { email: "", password: "" },
+                    create: {
+                      fullName: "",
+                      email: "",
+                      phoneNumber: "",
+                      facilityName: "",
+                      facilityAddress: "",
+                      accountPassword: "",
+                      verifyPassword: "",
+                    },
+                  });
+                }
+              }}
+            >
+              {showRegister ? "Back to login" : "Need help?"}
+            </Button>
+          )}
         </div>
 
         {/* Form Container */}
@@ -644,9 +649,16 @@ export function LoginPage() {
                   <h2 className="text-2xl font-bold tracking-tight text-foreground mb-2 text-center">
                     Account created successfully
                   </h2>
+                  <p className="text-sm text-muted-foreground leading-relaxed text-center mb-4">
+                    Your account has been created. We've sent a verification
+                    email to{" "}
+                    <strong className="text-foreground">
+                      {formData.create.email}.
+                    </strong>
+                  </p>
                   <p className="text-sm text-muted-foreground leading-relaxed text-center">
-                    Your account has been created. You can now sign in with your
-                    credentials.
+                    Please check your inbox and click the verification link to
+                    activate your account before signing in.
                   </p>
                 </div>
 
@@ -912,72 +924,12 @@ export function LoginPage() {
                       </span>
                     ) : (
                       <>
-                        Verify account
+                        Verify then create account
                         <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
                       </>
                     )}
                   </Button>
                 </form>
-              </>
-            ) : !showCreateForm ? (
-              <>
-                {/* Verification Success */}
-                <div className="mb-8">
-                  <div className="mb-4 flex justify-center">
-                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                      <CheckCircle2 className="w-8 h-8 text-primary" />
-                    </div>
-                  </div>
-                  <h2 className="text-2xl font-bold tracking-tight text-foreground mb-2 text-center">
-                    Verification successful
-                  </h2>
-                  <p className="text-sm text-muted-foreground leading-relaxed text-center">
-                    Choose an option to continue.
-                  </p>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="space-y-3">
-                  <Button
-                    size="lg"
-                    className="w-full h-11 font-semibold gap-2 group"
-                    onClick={() => {
-                      setShowRegister(false);
-                      setIsVerified(false);
-                      setError("");
-                      setFormErrors({
-                        login: {},
-                        verify: {},
-                        create: {},
-                      });
-                      setFormData({
-                        login: { email: "", password: "" },
-                        verify: { email: "", password: "" },
-                        create: {
-                          fullName: "",
-                          email: "",
-                          phoneNumber: "",
-                          facilityName: "",
-                          facilityAddress: "",
-                          accountPassword: "",
-                          verifyPassword: "",
-                        },
-                      });
-                    }}
-                  >
-                    Login
-                    <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="w-full h-11 font-semibold gap-2"
-                    onClick={() => setShowCreateForm(true)}
-                  >
-                    <Plus className="w-4 h-4" />
-                    Create Account
-                  </Button>
-                </div>
               </>
             ) : (
               <>
@@ -1025,7 +977,7 @@ export function LoginPage() {
                       onChange={(e) =>
                         handleCreateAccountFields(
                           "facilityName",
-                          e.target.value
+                          e.target.value,
                         )
                       }
                       onFocus={moveCursorToEnd}
@@ -1055,7 +1007,7 @@ export function LoginPage() {
                       onChange={(e) =>
                         handleCreateAccountFields(
                           "facilityAddress",
-                          e.target.value
+                          e.target.value,
                         )
                       }
                       onFocus={moveCursorToEnd}
@@ -1175,7 +1127,7 @@ export function LoginPage() {
                       onChange={(e) =>
                         handleCreateAccountFields(
                           "accountPassword",
-                          e.target.value
+                          e.target.value,
                         )
                       }
                       onFocus={moveCursorToEnd}
@@ -1205,7 +1157,7 @@ export function LoginPage() {
                       onChange={(e) =>
                         handleCreateAccountFields(
                           "verifyPassword",
-                          e.target.value
+                          e.target.value,
                         )
                       }
                       onFocus={moveCursorToEnd}

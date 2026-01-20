@@ -1,5 +1,4 @@
 import { LogOut, User, Bell } from "lucide-react";
-import { useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/contexts/auth-context";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -14,11 +13,10 @@ import { Button } from "@/components/ui/button";
 
 export function Header() {
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
-    navigate({ to: "/" });
+  const handleLogout = async () => {
+    // Auth context will handle navigation with window.location.replace
+    await logout();
   };
 
   const initials = user?.name

@@ -35,5 +35,5 @@ export interface AuthContextType<TUser extends BaseUser = BaseUser> {
 	isAuthenticated: boolean;
 	isLoading: boolean;
 	login: (email: string, password: string) => Promise<void> | Promise<boolean>;
-	logout: () => void;
+	logout: () => void | Promise<void>;
 }

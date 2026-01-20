@@ -13,63 +13,63 @@ const isProduction = process.env.NODE_ENV === "production";
 
 // Trusted origins for CORS
 const trustedOrigins = isProduction
-	? [
-			siteUrl,
-			"https://generator.hwm.app",
-			"https://treater.hwm.app",
-			"https://trucking.hwm.app",
-		]
-	: [
-			siteUrl,
-			"http://localhost:3001", // generator app
-			"http://localhost:3002", // treater app
-			"http://localhost:3003", // trucking app
-		];
+  ? [
+      siteUrl,
+      "https://generator.hwm.app",
+      "https://treater.hwm.app",
+      "https://trucking.hwm.app",
+    ]
+  : [
+      siteUrl,
+      "http://localhost:3001", // generator app
+      "http://localhost:3002", // treater app
+      "http://localhost:3003", // trucking app
+    ];
 
 // Component client for integrating Convex with Better Auth
 export const authComponent = createClient<DataModel>(components.betterAuth);
 
 // Create the Better Auth instance with all plugins
 export const createAuth = (ctx: GenericCtx<DataModel>) => {
-	return betterAuth({
-		baseURL: siteUrl,
-		trustedOrigins,
-		database: authComponent.adapter(ctx),
+  return betterAuth({
+    baseURL: siteUrl,
+    trustedOrigins,
+    database: authComponent.adapter(ctx),
 
-		// Rate limiting to prevent brute force attacks
-		rateLimit: {
-			enabled: true,
-			window: 60, // 1 minute window
-			max: 10, // 10 requests per minute default
-			customRules: {
-				"/sign-in/email": {
-					window: 60,
-					max: 5, // 5 login attempts per minute
-				},
-				"/sign-up/email": {
-					window: 300, // 5 minutes
-					max: 3, // 3 signups per 5 minutes
-				},
-				"/reset-password/*": {
-					window: 300,
-					max: 3, // 3 password reset attempts per 5 minutes
-				},
-			},
-		},
+    // Rate limiting to prevent brute force attacks
+    rateLimit: {
+      enabled: true,
+      window: 60, // 1 minute window
+      max: 10, // 10 requests per minute default
+      customRules: {
+        "/sign-in/email": {
+          window: 60,
+          max: 5, // 5 login attempts per minute
+        },
+        "/sign-up/email": {
+          window: 300, // 5 minutes
+          max: 3, // 3 signups per 5 minutes
+        },
+        "/reset-password/*": {
+          window: 300,
+          max: 3, // 3 password reset attempts per 5 minutes
+        },
+      },
+    },
 
-		// Email/password authentication
-		emailAndPassword: {
-			enabled: true,
-			requireEmailVerification: true, // Always require email verification for security
-			async sendResetPassword({ user, url }) {
-				const apiKey = process.env.RESEND_API_KEY;
-				if (!apiKey) {
-					console.error("RESEND_API_KEY is not configured");
-					return;
-				}
+    // Email/password authentication
+    emailAndPassword: {
+      enabled: true,
+      requireEmailVerification: false, // waiting for email domain
+      async sendResetPassword({ user, url }) {
+        const apiKey = process.env.RESEND_API_KEY;
+        if (!apiKey) {
+          console.error("RESEND_API_KEY is not configured");
+          return;
+        }
 
-				const userName = user.name || "there";
-				const html = `
+        const userName = user.name || "there";
+        const html = `
 					<!DOCTYPE html>
 					<html>
 					<head>
@@ -91,43 +91,43 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
 					</html>
 				`;
 
-				try {
-					const response = await fetch("https://api.resend.com/emails", {
-						method: "POST",
-						headers: {
-							Authorization: `Bearer ${apiKey}`,
-							"Content-Type": "application/json",
-						},
-						body: JSON.stringify({
-							from: process.env.RESEND_FROM_EMAIL ?? "noreply@hwm.app",
-							to: user.email,
-							subject: "Reset your password - HWM",
-							html,
-						}),
-					});
+        try {
+          const response = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              from: process.env.RESEND_FROM_EMAIL ?? "noreply@hwm.app",
+              to: user.email,
+              subject: "Reset your password - HWM",
+              html,
+            }),
+          });
 
-					if (!response.ok) {
-						const error = await response.text();
-						console.error(`Failed to send password reset email: ${error}`);
-					}
-				} catch (error) {
-					console.error("Error sending password reset email:", error);
-				}
-			},
-		},
+          if (!response.ok) {
+            const error = await response.text();
+            console.error(`Failed to send password reset email: ${error}`);
+          }
+        } catch (error) {
+          console.error("Error sending password reset email:", error);
+        }
+      },
+    },
 
-		// Email verification configuration
-		emailVerification: {
-			sendOnSignUp: true,
-			async sendVerificationEmail({ user, url }) {
-				const apiKey = process.env.RESEND_API_KEY;
-				if (!apiKey) {
-					console.error("RESEND_API_KEY is not configured");
-					return;
-				}
+    // Email verification configuration
+    emailVerification: {
+      sendOnSignUp: false, // waiting for email domain
+      async sendVerificationEmail({ user, url }) {
+        const apiKey = process.env.RESEND_API_KEY;
+        if (!apiKey) {
+          console.error("RESEND_API_KEY is not configured");
+          return;
+        }
 
-				const userName = user.name || "there";
-				const html = `
+        const userName = user.name || "there";
+        const html = `
 					<!DOCTYPE html>
 					<html>
 					<head>
@@ -149,74 +149,74 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
 					</html>
 				`;
 
-				try {
-					const response = await fetch("https://api.resend.com/emails", {
-						method: "POST",
-						headers: {
-							Authorization: `Bearer ${apiKey}`,
-							"Content-Type": "application/json",
-						},
-						body: JSON.stringify({
-							from: process.env.RESEND_FROM_EMAIL ?? "noreply@hwm.app",
-							to: user.email,
-							subject: "Verify your email address - HWM",
-							html,
-						}),
-					});
+        try {
+          const response = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              from: process.env.RESEND_FROM_EMAIL ?? "noreply@hwm.app",
+              to: user.email,
+              subject: "Verify your email address - HWM",
+              html,
+            }),
+          });
 
-					if (!response.ok) {
-						const error = await response.text();
-						console.error(`Failed to send verification email: ${error}`);
-					}
-				} catch (error) {
-					console.error("Error sending verification email:", error);
-				}
-			},
-		},
+          if (!response.ok) {
+            const error = await response.text();
+            console.error(`Failed to send verification email: ${error}`);
+          }
+        } catch (error) {
+          console.error("Error sending verification email:", error);
+        }
+      },
+    },
 
-		plugins: [
-			// Cross-domain plugin for multi-app sessions
-			crossDomain({ siteUrl }),
+    plugins: [
+      // Cross-domain plugin for multi-app sessions
+      crossDomain({ siteUrl }),
 
-			// Convex plugin for Convex compatibility
-			convex({ authConfig }),
+      // Convex plugin for Convex compatibility
+      convex({ authConfig }),
 
-			// Organization plugin for multi-tenant support
-			organization({
-				// Allow treaters to create organizations
-				allowUserToCreateOrganization: true,
+      // Organization plugin for multi-tenant support
+      organization({
+        // Allow treaters to create organizations
+        allowUserToCreateOrganization: true,
 
-				// Maximum organizations a user can own
-				organizationLimit: 100,
+        // Maximum organizations a user can own
+        organizationLimit: 100,
 
-				// Send invitation email
-				async sendInvitationEmail(data) {
-					const { email, organization: org, inviter } = data;
+        // Send invitation email
+        async sendInvitationEmail(data) {
+          const { email, organization: org, inviter } = data;
 
-					// Use Resend API directly since we can't call actions from here
-					const apiKey = process.env.RESEND_API_KEY;
-					if (!apiKey) {
-						console.error("RESEND_API_KEY is not configured");
-						return;
-					}
+          // Use Resend API directly since we can't call actions from here
+          const apiKey = process.env.RESEND_API_KEY;
+          if (!apiKey) {
+            console.error("RESEND_API_KEY is not configured");
+            return;
+          }
 
-					const orgMeta = org.metadata as
-						| { organizationType?: string }
-						| undefined;
-					const orgType = orgMeta?.organizationType || "organization";
-					const orgTypeName =
-						orgType === "treater"
-							? "Treatment Facility"
-							: orgType === "generator"
-								? "Hospital"
-								: "Trucking Partner";
+          const orgMeta = org.metadata as
+            | { organizationType?: string }
+            | undefined;
+          const orgType = orgMeta?.organizationType || "organization";
+          const orgTypeName =
+            orgType === "treater"
+              ? "Treatment Facility"
+              : orgType === "generator"
+                ? "Hospital"
+                : "Trucking Partner";
 
-					const inviterName = inviter.user.name || inviter.user.email;
+          const inviterName = inviter.user.name || inviter.user.email;
 
-					// Build invitation URL
-					const invitationUrl = `${siteUrl}/accept-invitation?token=${data.id}`;
+          // Build invitation URL
+          const invitationUrl = `${siteUrl}/accept-invitation?token=${data.id}`;
 
-					const html = `
+          const html = `
 						<!DOCTYPE html>
 						<html>
 						<head>
@@ -237,43 +237,43 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
 						</html>
 					`;
 
-					try {
-						const response = await fetch("https://api.resend.com/emails", {
-							method: "POST",
-							headers: {
-								Authorization: `Bearer ${apiKey}`,
-								"Content-Type": "application/json",
-							},
-							body: JSON.stringify({
-								from: process.env.RESEND_FROM_EMAIL ?? "noreply@hwm.app",
-								to: email,
-								subject: `Join ${org.name} on HWM`,
-								html,
-							}),
-						});
+          try {
+            const response = await fetch("https://api.resend.com/emails", {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${apiKey}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                from: process.env.RESEND_FROM_EMAIL ?? "noreply@hwm.app",
+                to: email,
+                subject: `Join ${org.name} on HWM`,
+                html,
+              }),
+            });
 
-						if (!response.ok) {
-							const error = await response.text();
-							console.error(`Failed to send invitation email: ${error}`);
-						}
-					} catch (error) {
-						console.error("Error sending invitation email:", error);
-					}
-				},
-			}),
+            if (!response.ok) {
+              const error = await response.text();
+              console.error(`Failed to send invitation email: ${error}`);
+            }
+          } catch (error) {
+            console.error("Error sending invitation email:", error);
+          }
+        },
+      }),
 
-			// NOTE: Admin plugin removed temporarily because its schema fields (banned, role)
-			// are not in the default betterAuth component schema. To use admin features,
-			// set up a local Better Auth component install with custom schema.
-			// See: https://labs.convex.dev/better-auth/features/local-install
-		],
-	});
+      // NOTE: Admin plugin removed temporarily because its schema fields (banned, role)
+      // are not in the default betterAuth component schema. To use admin features,
+      // set up a local Better Auth component install with custom schema.
+      // See: https://labs.convex.dev/better-auth/features/local-install
+    ],
+  });
 };
 
 // Query to get the current authenticated user
 export const getCurrentUser = query({
-	args: {},
-	handler: async (ctx) => {
-		return authComponent.getAuthUser(ctx);
-	},
+  args: {},
+  handler: async (ctx) => {
+    return authComponent.getAuthUser(ctx);
+  },
 });

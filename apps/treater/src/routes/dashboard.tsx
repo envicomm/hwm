@@ -1,11 +1,12 @@
-import { useState } from "react";
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { StatsOverview } from "@/components/dashboard/stats-overview";
 import { GeneratorsOverview } from "@/components/dashboard/generators-overview";
 import { WasteStatusChart } from "@/components/dashboard/waste-status-chart";
 import { StorageAlerts } from "@/components/dashboard/storage-alerts";
 import { AddGeneratorWizard } from "@/components/dashboard/add-generator-wizard";
+import { useAuth } from "@/contexts/auth-context";
 
 export const Route = createFileRoute("/dashboard")({
   beforeLoad: () => {
@@ -21,6 +22,15 @@ export const Route = createFileRoute("/dashboard")({
 
 function DashboardPage() {
   const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const { isAuthenticated, isLoading } = useAuth();
+  const navigate = useNavigate();
+
+  // Guard against browser back button after logout
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      navigate({ to: "/", replace: true });
+    }
+  }, [isAuthenticated, isLoading, navigate]);
 
   const handleAddGenerator = () => {
     setIsWizardOpen(true);
@@ -33,6 +43,11 @@ function DashboardPage() {
   const handleWizardSubmit = (data: any) => {
     console.log("New generator data:", data);
   };
+
+  // Show nothing while checking auth to prevent flash of content
+  if (isLoading || !isAuthenticated) {
+    return null;
+  }
 
   return (
     <DashboardLayout>
