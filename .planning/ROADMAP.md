@@ -158,6 +158,14 @@ Plans:
 - Add auth client to generator app (port 3001)
 - Add auth client to trucking app (port 3003)
 
+**Plans:** 4 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — Enable SSR auth in generator and trucking apps
+- [ ] 04-02-PLAN.md — Invitation mutations and org-type URL routing
+- [ ] 04-03-PLAN.md — Invitation acceptance flow and domain user creation
+- [ ] 04-04-PLAN.md — Team member management UI
+
 ---
 
 ### Phase 5: Role-Based Access Control
@@ -233,7 +241,7 @@ Plans:
 | Phase 1: Core Authentication | Complete | 5/29 | 100% |
 | Phase 2: Organization Bridge | Complete | 2/29 | 100% |
 | Phase 3: Organization Management | Complete | 4/29 | 100% |
-| Phase 4: Team Management | Pending | 7/29 | 0% |
+| Phase 4: Team Management | Planned | 7/29 | 0% |
 | Phase 5: Role-Based Access Control | Pending | 7/29 | 0% |
 | Phase 6: Cross-App Authentication | Pending | 4/29 | 0% |
 | **Total** | **In Progress** | **29/29** | **~38%** |
@@ -263,7 +271,7 @@ Based on research/SUMMARY.md analysis:
 |-------|-----------------|----------|--------|
 | Phase 2 | Organization hierarchy permission model (does Treater admin auto-view child org data?) | High | Complete |
 | Phase 5 | DENR Philippines audit logging requirements (what must be logged, retention) | Medium | Pending |
-| Phase 4 | Invitation workflow edge cases (email deliverability, phishing prevention) | Low | Pending |
+| Phase 4 | Invitation workflow edge cases (email deliverability, phishing prevention) | Low | Complete |
 
 Schedule `/gsd:research-phase` for Phase 2 (hierarchy permissions) during requirements definition.
 
@@ -284,5 +292,5 @@ Based on standard depth (3-5 plans per phase) and research recommendations:
 
 ---
 
-**Last updated:** 2026-01-21
-**Next step:** `/gsd:discuss-phase 4` to gather context for Team Management phase
+**Last updated:** 2026-01-22
+**Next step:** `/gsd:execute-phase 4` to implement Team Management
