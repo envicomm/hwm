@@ -1,6 +1,6 @@
 # Project State: HWM v1.1
 
-**Last Updated:** 2026-01-21
+**Last Updated:** 2026-01-22
 **Milestone:** v1.1 Authentication + Organization Management
 
 ## Project Reference
@@ -19,18 +19,18 @@
 
 ## Current Position
 
-**Phase:** Phase 3 - Organization Management (3 of 6) - COMPLETE
-**Plan:** 4/4 plans complete
-**Status:** Phase 3 complete - organization management UI fully verified
-**Last activity:** 2026-01-21 - Completed Phase 3 execution and verification
+**Phase:** Phase 4 - Team Management (4 of 6)
+**Plan:** 2/4 plans complete
+**Status:** In progress - invitation mutations complete
+**Last activity:** 2026-01-22 - Completed 04-02-PLAN.md (Invitation Mutations)
 
 ```
-Progress: [██████████░░░░░░░░░░] ~38%
+Progress: [████████████░░░░░░░░] ~50%
 
-Phase 1: Core Authentication        [██████████] 5/5 plans complete ✓
-Phase 2: Organization Bridge        [██████████] 3/3 plans complete ✓
-Phase 3: Organization Management    [██████████] 4/4 plans complete ✓
-Phase 4: Team Management            [░░░░░░░░░░] 0/? plans
+Phase 1: Core Authentication        [██████████] 5/5 plans complete
+Phase 2: Organization Bridge        [██████████] 3/3 plans complete
+Phase 3: Organization Management    [██████████] 4/4 plans complete
+Phase 4: Team Management            [█████░░░░░] 2/4 plans complete
 Phase 5: Role-Based Access Control  [░░░░░░░░░░] 0/? plans
 Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 ```
@@ -41,9 +41,9 @@ Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 
 | Metric | Value | Target | Status |
 |--------|-------|--------|--------|
-| Plans Completed | 12 total (5 Phase 1, 3 Phase 2, 4 Phase 3) | - | On Track |
-| Phases Completed | 3/6 (Phase 3 complete) | 6/6 | On Track |
-| Requirements Complete | 11/29 | 29/29 | On Track |
+| Plans Completed | 14 total (5 Phase 1, 3 Phase 2, 4 Phase 3, 2 Phase 4) | - | On Track |
+| Phases Completed | 3/6 (Phase 4 in progress) | 6/6 | On Track |
+| Requirements Complete | 12/29 | 29/29 | On Track |
 | Coverage | 100% | 100% | On Track |
 
 ---
@@ -84,6 +84,8 @@ Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 | 2026-01-21 | Detail pages query organization links separately | Can use specific api.organizationLinks.index.getByGenerator/getByHauler | Shows Better Auth organization ID for debugging |
 | 2026-01-21 | Display serviceArea instead of fleetSize for haulers | fleetSize doesn't exist in schema, serviceArea does | UI matches actual data model |
 | 2026-01-21 | Conditional location cards in detail pages | Location data is optional in schema | UI degrades gracefully when location not provided |
+| 2026-01-22 | Route invitation URLs based on organizationType metadata | Each org type routes to its respective app for invitation acceptance | Env vars: GENERATOR_APP_URL, TRUCKING_APP_URL for production |
+| 2026-01-22 | Use auth.api.createInvitation for invitation mutations | Better Auth handles invitation creation, expiration, and email callback | Mutations verify entity exists before creating invitation |
 
 ### Architecture Patterns Established
 
@@ -163,6 +165,21 @@ beforeLoad: async ({ context }) => {
 - Child orgs (generators, haulers): set parentBetterAuthOrgId to parent's betterAuthOrgId
 - Note: If Convex writes fail after Better Auth org created, orphan exists (acceptable for MVP)
 
+**Invitation Pattern (04-02):**
+```typescript
+// Create invitation via Better Auth API:
+1. Get auth context -> authComponent.getAuth(createAuth, ctx)
+2. Verify entity exists -> ctx.db.get(entityId)
+3. Get Better Auth org ID -> getBetterAuthOrgFromEntity(ctx, type, entityId)
+4. Create invitation -> auth.api.createInvitation({ email, role, organizationId })
+5. Return invitation metadata with entity name for UI confirmation
+
+// sendInvitationEmail routes by org type:
+- generator -> GENERATOR_APP_URL (localhost:3001)
+- hauler -> TRUCKING_APP_URL (localhost:3003)
+- treater -> siteUrl (localhost:3002)
+```
+
 ### Open Questions
 
 1. **DENR Philippines Audit Requirements (Phase 5 blocker)**
@@ -178,18 +195,22 @@ beforeLoad: async ({ context }) => {
 
 ## TODO List
 
-### Phase 2 Complete
+### Phase 4 In Progress
 
-- [x] Complete 02-01-PLAN.md (Schema Bridge Fields)
-- [x] Complete 02-02-PLAN.md (Organization Resolution Helpers)
-- [x] Complete 02-03-PLAN.md (Atomic Organization Creation)
+- [x] Complete 04-01-PLAN.md (Team Schema)
+- [x] Complete 04-02-PLAN.md (Invitation Mutations)
+- [ ] Complete 04-03-PLAN.md (Invitation Acceptance)
+- [ ] Complete 04-04-PLAN.md (Team Management UI)
+
+### User Actions Required
+
 - [ ] **USER ACTION:** Configure Resend API key for email verification
 - [ ] **USER ACTION:** Verify full auth flow end-to-end
+- [ ] **USER ACTION:** Set GENERATOR_APP_URL and TRUCKING_APP_URL for production
 
 ### Upcoming (Next Phases)
 
 - [ ] Research DENR audit logging requirements (Phase 5)
-- [ ] Design invitation acceptance UX (Phase 4)
 - [ ] Define comprehensive permission matrix (Phase 5)
 
 ### Research Needed
@@ -212,69 +233,56 @@ beforeLoad: async ({ context }) => {
 
 ### Last Session Summary
 
-**Date:** 2026-01-21
-**Activity:** Executed Phase 3 Plan 04 (Organization Detail Pages)
-**Outcome:** Created detail pages for generators and haulers with navigation from dashboard cards
+**Date:** 2026-01-22
+**Activity:** Executed Phase 4 Plan 02 (Invitation Mutations)
+**Outcome:** Created invitation mutations and org-type URL routing for emails
 
 **Commits:**
-- `6e96409` - feat(03-04): create generator detail page route
-- `8f047e6` - feat(03-04): create hauler detail page route
-- `678f53c` - feat(03-04): wire card clicks to detail pages
+- `ec21502` - feat(04-02): add org-type URL routing for invitation emails
+- `436d9c9` - feat(04-02): create invitation mutations for teams module
 
 **Files Created:**
-- `apps/treater/src/routes/dashboard/generators/index.tsx` - Redirect route (list is on dashboard)
-- `apps/treater/src/routes/dashboard/generators/$generatorId.tsx` - Generator detail page
-- `apps/treater/src/routes/dashboard/haulers/index.tsx` - Redirect route (list is on dashboard)
-- `apps/treater/src/routes/dashboard/haulers/$haulerId.tsx` - Hauler detail page
+- `packages/convex/convex/teams/mutations.ts` - inviteToGenerator, inviteToHauler, inviteToTreater mutations
+- `packages/convex/convex/teams/index.ts` - Barrel export for teams module
 
 **Files Modified:**
-- `apps/treater/src/components/dashboard/generators-overview.tsx` - Added navigation on card click
-- `apps/treater/src/components/dashboard/haulers-overview.tsx` - Added navigation on card click
+- `packages/convex/convex/auth.ts` - Added org-type URL routing in sendInvitationEmail callback
 
 **Key Outcomes:**
-- Generator detail pages show organization info, contact, storage config, location
-- Hauler detail pages show organization info (license, service area), contact, headquarters location
-- Navigation from dashboard cards to detail pages works seamlessly
-- Authorization enforced at detail page level (treaterId for generators, partnership for haulers)
-- Phase 3 Organization Management complete (ORG-05, ORG-06 requirements satisfied)
+- Invitation mutations use Better Auth auth.api.createInvitation
+- sendInvitationEmail callback routes to correct app based on organizationType
+- Mutations return invitation metadata including entity name for UI confirmation
 
 **Deviations:**
-- Auto-fixed hauler detail to use serviceArea instead of fleetSize (schema mismatch)
-- Added location card to hauler detail for consistency with generators
+None - plan executed exactly as written
 
 ### Next Session Goals
 
-1. Begin Phase 4: Team Management
-2. Design user invitation flow for organizations
-3. Implement team member management UI
-4. Add role assignment capabilities
+1. Continue Phase 4: Team Management
+2. Implement invitation acceptance route (04-03)
+3. Create team management UI (04-04)
 
 ### Context for Next Claude
 
 **What you're building:** Multi-tenant auth infrastructure for hospital waste management platform. Treaters create and manage generators (hospitals) and haulers (trucking partners) with role-based access control.
 
-**Where we are:** Phases 1, 2, and 3 complete. Organization management UI fully functional with list views and detail pages.
+**Where we are:** Phases 1, 2, and 3 complete. Phase 4 in progress with invitation mutations complete.
 
-**What's special:** Using Better Auth organization plugin with bridge table pattern (organizationLinks) to map Better Auth's generic orgs to domain entities. All queries require authentication and enforce tenant isolation. Detail pages use parameterized routes with authorization checks.
+**What's special:** Using Better Auth organization plugin with bridge table pattern (organizationLinks) to map Better Auth's generic orgs to domain entities. Invitation emails route to correct app (generator/hauler/treater) based on organization type metadata.
 
-**Key files (Phase 3 complete):**
-- `packages/convex/convex/generators/queries.ts` - Authenticated generator queries with treaterId verification
-- `packages/convex/convex/haulers/queries.ts` - Authenticated hauler queries with partnership verification
-- `apps/treater/src/hooks/use-active-treater.ts` - Resolves treaterId from Better Auth active organization
-- `apps/treater/src/components/dashboard/generators-overview.tsx` - Generator list with navigation
-- `apps/treater/src/components/dashboard/haulers-overview.tsx` - Hauler list with navigation
-- `apps/treater/src/routes/dashboard/generators/$generatorId.tsx` - Generator detail page
-- `apps/treater/src/routes/dashboard/haulers/$haulerId.tsx` - Hauler detail page
+**Key files (Phase 4 progress):**
+- `packages/convex/convex/teams/mutations.ts` - inviteToGenerator, inviteToHauler, inviteToTreater mutations
+- `packages/convex/convex/auth.ts` - sendInvitationEmail with org-type URL routing
+- `packages/convex/convex/organizations/helpers.ts` - getBetterAuthOrgFromEntity helper
 
 **Key constraints:**
 - Better Auth 1.4.10 + Convex adapter 0.10.9
 - Import Convex API from @hwm/convex root (barrel export)
-- Access queries via api.generators.index.functionName notation
-- Use useActiveTreater for tenant context in components
-- TanStack Router file-based routing with parameterized detail pages
-- Computed fields (storage utilization, pending/treated counts) stubbed until wasteBags queries available
+- Use authComponent.getAuth pattern for Better Auth API calls
+- Invitation URLs route based on organizationType in org metadata
+- Environment variables: GENERATOR_APP_URL, TRUCKING_APP_URL for production
 
 ---
 
 **State initialized:** 2026-01-21 after roadmap creation
-**Last update:** 2026-01-21 after Phase 3 Plan 04 completion
+**Last update:** 2026-01-22 after Phase 4 Plan 02 completion
