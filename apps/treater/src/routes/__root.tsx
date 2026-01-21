@@ -11,6 +11,7 @@ import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
 import type { ConvexQueryClient } from "@convex-dev/react-query";
 import { getToken } from "@/lib/auth-server";
 import { authClient } from "@/lib/auth";
+import { AuthProvider } from "@/contexts/auth-context";
 import "../styles.css";
 
 // Server function to get auth token
@@ -50,7 +51,8 @@ function RootComponent() {
   const convexClient =
     router.options.context?.convexQueryClient?.convexClient ?? null;
 
-  // Guard: If no convex client, render without auth provider (shouldn't happen in practice)
+  // Guard: If no convex client, render without Convex provider (shouldn't happen in practice)
+  // Still wrap with AuthProvider for consistency, though useAuth will throw without Convex context
   if (!convexClient) {
     return (
       <html lang="en">
@@ -76,7 +78,9 @@ function RootComponent() {
           authClient={authClient}
           initialToken={token}
         >
-          <Outlet />
+          <AuthProvider>
+            <Outlet />
+          </AuthProvider>
         </ConvexBetterAuthProvider>
         <Scripts />
       </body>
