@@ -3,6 +3,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { StatsOverview } from "@/components/dashboard/stats-overview";
 import { GeneratorsOverview } from "@/components/dashboard/generators-overview";
+import { HaulersOverview } from "@/components/dashboard/haulers-overview";
 import { WasteStatusChart } from "@/components/dashboard/waste-status-chart";
 import { StorageAlerts } from "@/components/dashboard/storage-alerts";
 import { AddGeneratorWizard } from "@/components/dashboard/add-generator-wizard";
@@ -32,6 +33,11 @@ function DashboardPage() {
     console.log("New generator data:", data);
   };
 
+  const handleAddHauler = () => {
+    // TODO: Implement hauler wizard in future phase
+    console.log("Add hauler clicked");
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -46,6 +52,9 @@ function DashboardPage() {
 
         {/* Generators Section */}
         <GeneratorsOverview onAddGenerator={handleAddGenerator} />
+
+        {/* Haulers Section */}
+        <HaulersOverview onAddHauler={handleAddHauler} />
 
         {/* Add Generator Wizard Modal */}
         <AddGeneratorWizard
