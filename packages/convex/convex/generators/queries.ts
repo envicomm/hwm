@@ -1,5 +1,6 @@
 import { query } from "../_generated/server";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
+import { requireAuth } from "../lib/auth";
 
 // Get all generators for a treater
 export const getByTreater = query({
@@ -8,6 +9,8 @@ export const getByTreater = query({
 		includeInactive: v.optional(v.boolean()),
 	},
 	handler: async (ctx, args) => {
+		await requireAuth(ctx);
+
 		const generators = await ctx.db
 			.query("generators")
 			.withIndex("by_treater", (q) => q.eq("treaterId", args.treaterId))
@@ -25,9 +28,20 @@ export const getByTreater = query({
 export const getById = query({
 	args: {
 		generatorId: v.id("generators"),
+		treaterId: v.id("treaters"),
 	},
 	handler: async (ctx, args) => {
-		return await ctx.db.get(args.generatorId);
+		await requireAuth(ctx);
+
+		const generator = await ctx.db.get(args.generatorId);
+		if (!generator) return null;
+
+		// Verify generator belongs to treater
+		if (generator.treaterId !== args.treaterId) {
+			throw new ConvexError("Access denied: Generator does not belong to this treater");
+		}
+
+		return generator;
 	},
 });
 
@@ -35,10 +49,18 @@ export const getById = query({
 export const getWithOrgLink = query({
 	args: {
 		generatorId: v.id("generators"),
+		treaterId: v.id("treaters"),
 	},
 	handler: async (ctx, args) => {
+		await requireAuth(ctx);
+
 		const generator = await ctx.db.get(args.generatorId);
 		if (!generator) return null;
+
+		// Verify generator belongs to treater
+		if (generator.treaterId !== args.treaterId) {
+			throw new ConvexError("Access denied: Generator does not belong to this treater");
+		}
 
 		const orgLink = await ctx.db
 			.query("organizationLinks")
