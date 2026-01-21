@@ -20,17 +20,17 @@
 ## Current Position
 
 **Phase:** Phase 4 - Team Management (4 of 6)
-**Plan:** 2/4 plans complete
-**Status:** In progress - invitation mutations complete
-**Last activity:** 2026-01-22 - Completed 04-02-PLAN.md (Invitation Mutations)
+**Plan:** 3/4 plans complete
+**Status:** In progress - multi-app SSR auth complete
+**Last activity:** 2026-01-22 - Completed 04-01-PLAN.md (Multi-App SSR Auth)
 
 ```
-Progress: [████████████░░░░░░░░] ~50%
+Progress: [████████████░░░░░░░░] ~55%
 
 Phase 1: Core Authentication        [██████████] 5/5 plans complete
 Phase 2: Organization Bridge        [██████████] 3/3 plans complete
 Phase 3: Organization Management    [██████████] 4/4 plans complete
-Phase 4: Team Management            [█████░░░░░] 2/4 plans complete
+Phase 4: Team Management            [███████░░░] 3/4 plans complete
 Phase 5: Role-Based Access Control  [░░░░░░░░░░] 0/? plans
 Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 ```
@@ -41,9 +41,9 @@ Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 
 | Metric | Value | Target | Status |
 |--------|-------|--------|--------|
-| Plans Completed | 14 total (5 Phase 1, 3 Phase 2, 4 Phase 3, 2 Phase 4) | - | On Track |
+| Plans Completed | 15 total (5 Phase 1, 3 Phase 2, 4 Phase 3, 3 Phase 4) | - | On Track |
 | Phases Completed | 3/6 (Phase 4 in progress) | 6/6 | On Track |
-| Requirements Complete | 12/29 | 29/29 | On Track |
+| Requirements Complete | 13/29 | 29/29 | On Track |
 | Coverage | 100% | 100% | On Track |
 
 ---
@@ -86,6 +86,8 @@ Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 | 2026-01-21 | Conditional location cards in detail pages | Location data is optional in schema | UI degrades gracefully when location not provided |
 | 2026-01-22 | Route invitation URLs based on organizationType metadata | Each org type routes to its respective app for invitation acceptance | Env vars: GENERATOR_APP_URL, TRUCKING_APP_URL for production |
 | 2026-01-22 | Use auth.api.createInvitation for invitation mutations | Better Auth handles invitation creation, expiration, and email callback | Mutations verify entity exists before creating invitation |
+| 2026-01-22 | Replicate treater SSR auth pattern to generator/trucking apps | Ensures consistent auth experience across all apps | All apps: auth-server.ts + api/auth/$.ts + ConvexBetterAuthProvider |
+| 2026-01-22 | Move AuthProvider from router.Wrap to __root.tsx | AuthProvider needs Convex context for useConvexAuth hook | AuthProvider now inside ConvexBetterAuthProvider wrapper |
 
 ### Architecture Patterns Established
 
@@ -197,7 +199,7 @@ beforeLoad: async ({ context }) => {
 
 ### Phase 4 In Progress
 
-- [x] Complete 04-01-PLAN.md (Team Schema)
+- [x] Complete 04-01-PLAN.md (Multi-App SSR Auth)
 - [x] Complete 04-02-PLAN.md (Invitation Mutations)
 - [ ] Complete 04-03-PLAN.md (Invitation Acceptance)
 - [ ] Complete 04-04-PLAN.md (Team Management UI)
@@ -234,27 +236,32 @@ beforeLoad: async ({ context }) => {
 ### Last Session Summary
 
 **Date:** 2026-01-22
-**Activity:** Executed Phase 4 Plan 02 (Invitation Mutations)
-**Outcome:** Created invitation mutations and org-type URL routing for emails
+**Activity:** Executed Phase 4 Plan 01 (Multi-App SSR Auth)
+**Outcome:** Added SSR auth infrastructure to generator and trucking apps
 
 **Commits:**
-- `ec21502` - feat(04-02): add org-type URL routing for invitation emails
-- `436d9c9` - feat(04-02): create invitation mutations for teams module
+- `e417d64` - feat(04-01): add SSR auth infrastructure to generator app
+- `1f72e18` - feat(04-01): add SSR auth infrastructure to trucking app
+- `1fedb83` - feat(04-01): add convexQueryClient to router context for SSR auth
 
 **Files Created:**
-- `packages/convex/convex/teams/mutations.ts` - inviteToGenerator, inviteToHauler, inviteToTreater mutations
-- `packages/convex/convex/teams/index.ts` - Barrel export for teams module
+- `apps/generator/src/lib/auth-server.ts` - SSR auth helpers for generator
+- `apps/generator/src/routes/api/auth/$.ts` - Auth proxy route for generator
+- `apps/trucking/src/lib/auth-server.ts` - SSR auth helpers for trucking
+- `apps/trucking/src/routes/api/auth/$.ts` - Auth proxy route for trucking
 
 **Files Modified:**
-- `packages/convex/convex/auth.ts` - Added org-type URL routing in sendInvitationEmail callback
+- Generator: __root.tsx, auth-context.tsx, router.tsx, index.tsx, auth.$authView.tsx, header.tsx
+- Trucking: __root.tsx, auth-context.tsx, router.tsx, index.tsx, auth.$authView.tsx, header.tsx
 
 **Key Outcomes:**
-- Invitation mutations use Better Auth auth.api.createInvitation
-- sendInvitationEmail callback routes to correct app based on organizationType
-- Mutations return invitation metadata including entity name for UI confirmation
+- Both apps have full SSR auth infrastructure matching treater pattern
+- Auth context uses useConvexAuth + Better Auth session (replaced mock auth)
+- Router provides convexQueryClient for SSR token handling
+- Auth routes redirect authenticated users to dashboard
 
 **Deviations:**
-None - plan executed exactly as written
+4 auto-fixes (Rule 2): Updated auth-context.tsx, header.tsx, auth routes, index.tsx to use Better Auth pattern
 
 ### Next Session Goals
 
@@ -266,23 +273,25 @@ None - plan executed exactly as written
 
 **What you're building:** Multi-tenant auth infrastructure for hospital waste management platform. Treaters create and manage generators (hospitals) and haulers (trucking partners) with role-based access control.
 
-**Where we are:** Phases 1, 2, and 3 complete. Phase 4 in progress with invitation mutations complete.
+**Where we are:** Phases 1, 2, and 3 complete. Phase 4 in progress with multi-app SSR auth complete.
 
-**What's special:** Using Better Auth organization plugin with bridge table pattern (organizationLinks) to map Better Auth's generic orgs to domain entities. Invitation emails route to correct app (generator/hauler/treater) based on organization type metadata.
+**What's special:** Using Better Auth organization plugin with bridge table pattern (organizationLinks) to map Better Auth's generic orgs to domain entities. All three apps (treater, generator, trucking) now have consistent SSR auth infrastructure.
 
 **Key files (Phase 4 progress):**
+- `apps/generator/src/lib/auth-server.ts` - SSR auth helpers for generator app
+- `apps/generator/src/routes/api/auth/$.ts` - Auth proxy route for generator
+- `apps/trucking/src/lib/auth-server.ts` - SSR auth helpers for trucking app
+- `apps/trucking/src/routes/api/auth/$.ts` - Auth proxy route for trucking
 - `packages/convex/convex/teams/mutations.ts` - inviteToGenerator, inviteToHauler, inviteToTreater mutations
-- `packages/convex/convex/auth.ts` - sendInvitationEmail with org-type URL routing
-- `packages/convex/convex/organizations/helpers.ts` - getBetterAuthOrgFromEntity helper
 
 **Key constraints:**
 - Better Auth 1.4.10 + Convex adapter 0.10.9
 - Import Convex API from @hwm/convex root (barrel export)
-- Use authComponent.getAuth pattern for Better Auth API calls
-- Invitation URLs route based on organizationType in org metadata
-- Environment variables: GENERATOR_APP_URL, TRUCKING_APP_URL for production
+- All apps use same SSR auth pattern: auth-server.ts + api/auth/$.ts + ConvexBetterAuthProvider
+- Router must provide convexQueryClient in context for serverHttpClient.setAuth(token)
+- AuthProvider must be inside ConvexBetterAuthProvider (needs useConvexAuth)
 
 ---
 
 **State initialized:** 2026-01-21 after roadmap creation
-**Last update:** 2026-01-22 after Phase 4 Plan 02 completion
+**Last update:** 2026-01-22 after Phase 4 Plan 01 completion
