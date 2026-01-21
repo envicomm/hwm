@@ -19,20 +19,20 @@
 
 ## Current Position
 
-**Phase:** Phase 1 - Core Authentication
-**Plan:** Not started (awaiting `/gsd:plan-phase 1`)
-**Status:** Pending
-**Progress:** 0/29 requirements completed (0%)
+**Phase:** Phase 1 - Core Authentication (1 of 6)
+**Plan:** 01-01 complete, 01-02 next (3 plans in phase)
+**Status:** In progress
+**Last activity:** 2026-01-21 - Completed 01-01-PLAN.md (Auth Proxy Route)
 
 ```
-Progress: [░░░░░░░░░░░░░░░░░░░░] 0%
+Progress: [██░░░░░░░░░░░░░░░░░░] ~3%
 
-Phase 1: Core Authentication        [░░░░░░░░░░] 0/5 requirements
-Phase 2: Organization Bridge        [░░░░░░░░░░] 0/2 requirements
-Phase 3: Organization Management    [░░░░░░░░░░] 0/4 requirements
-Phase 4: Team Management            [░░░░░░░░░░] 0/7 requirements
-Phase 5: Role-Based Access Control  [░░░░░░░░░░] 0/7 requirements
-Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/4 requirements
+Phase 1: Core Authentication        [██░░░░░░░░] 1/3 plans (01-01 done)
+Phase 2: Organization Bridge        [░░░░░░░░░░] 0/? plans
+Phase 3: Organization Management    [░░░░░░░░░░] 0/? plans
+Phase 4: Team Management            [░░░░░░░░░░] 0/? plans
+Phase 5: Role-Based Access Control  [░░░░░░░░░░] 0/? plans
+Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 ```
 
 ---
@@ -41,11 +41,10 @@ Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/4 require
 
 | Metric | Value | Target | Status |
 |--------|-------|--------|--------|
-| Requirements Completed | 0/29 | 29/29 | Not Started |
-| Phases Completed | 0/6 | 6/6 | Not Started |
-| Plans Completed | 0/0 | TBD | Not Started |
+| Plans Completed | 1/3 (Phase 1) | 3/3 | In Progress |
+| Phases Completed | 0/6 | 6/6 | In Progress |
+| Commits This Phase | 4 | - | On Track |
 | Coverage | 100% | 100% | On Track |
-| Estimated Timeline | 6-8 weeks | 6-8 weeks | On Track |
 
 ---
 
@@ -57,18 +56,20 @@ Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/4 require
 |------|----------|-----------|--------|
 | 2026-01-21 | Use Better Auth organization plugin with bridge table pattern | Separates auth concerns from domain logic; Better Auth manages generic orgs, organizationLinks maps to domain entities | Architecture: organizationLinks table required; all queries need org scoping |
 | 2026-01-21 | Treater is primary tenant, creates generators/haulers | Matches business model; simplifies access control | Organization model: invite-only provisioning, no self-registration |
-| 2026-01-21 | Haulers exclusive to one treater | Simplifies data scoping; aligns with typical business relationships | Schema: haulers → treaterId (not many-to-many) |
+| 2026-01-21 | Haulers exclusive to one treater | Simplifies data scoping; aligns with typical business relationships | Schema: haulers -> treaterId (not many-to-many) |
 | 2026-01-21 | Standard role hierarchy (owner/admin/member) | Common SaaS pattern; sufficient for initial needs | RBAC: 3 org roles + 5 domain roles (generator/treater/hauler/driver/admin) |
 | 2026-01-21 | Organization-scoped queries over RLS | Convex is server-only; auth happens at function boundaries | Security: explicit tenant filtering in all queries |
+| 2026-01-21 | Use process.env for server-side code in TanStack Start | TanStack Start server-side code requires process.env, not import.meta.env | All server-side auth code must use process.env |
+| 2026-01-21 | Add SSR noExternal config for @convex-dev/better-auth | Required for proper SSR bundling | All app vite configs need ssr.noExternal setting |
 
 ### Architecture Patterns Established
 
 **Organization Bridge Pattern:**
 ```
 Better Auth organization (generic)
-        ↓ (betterAuthOrgId)
+        | (betterAuthOrgId)
 organizationLinks (bridge table)
-        ↓ (organizationType + entity ID)
+        | (organizationType + entity ID)
 Domain entity (treaters/generators/haulers)
 ```
 
@@ -79,14 +80,21 @@ Domain entity (treaters/generators/haulers)
 4. Role-based permission check
 5. Data scoping by domain entity ID
 
+**Auth Proxy Pattern (NEW - 01-01):**
+```
+Client request -> /api/auth/$ -> auth-server.ts handler -> Convex Better Auth
+```
+- Route at `/api/auth/$` catches all auth requests (sign-in, sign-up, sign-out, etc.)
+- Server helpers from `~/lib/auth-server` for SSR contexts
+
 **Query Pattern (tenant isolation):**
 ```typescript
 // Required pattern in every query/mutation:
-1. Verify authentication → getAuthenticatedUser(ctx)
-2. Get active organization → getActiveOrganization(ctx)
-3. Resolve organization link → organizationLinks lookup
-4. Validate organization type → requireOrgType(ctx, "treater")
-5. Scope all queries → filter by treaterId/generatorId/haulerId
+1. Verify authentication -> getAuthenticatedUser(ctx)
+2. Get active organization -> getActiveOrganization(ctx)
+3. Resolve organization link -> organizationLinks lookup
+4. Validate organization type -> requireOrgType(ctx, "treater")
+5. Scope all queries -> filter by treaterId/generatorId/haulerId
 ```
 
 ### Open Questions
@@ -111,10 +119,11 @@ Domain entity (treaters/generators/haulers)
 
 ## TODO List
 
-### Immediate (Phase 1 Prep)
+### Immediate (Phase 1 In Progress)
 
-- [ ] Run `/gsd:plan-phase 1` to decompose Core Authentication into plans
-- [ ] Resolve brownfield schema questions (are there existing users to migrate?)
+- [x] Complete 01-01-PLAN.md (Auth Proxy Route)
+- [ ] Execute 01-02-PLAN.md (Login/Signup UI)
+- [ ] Execute 01-03-PLAN.md (Email Verification)
 - [ ] Verify Better Auth component is configured correctly in convex.json
 - [ ] Confirm Resend API key is set for email verification
 
@@ -138,7 +147,7 @@ Domain entity (treaters/generators/haulers)
 
 | Blocker | Impact | Mitigation | Owner | Status |
 |---------|--------|------------|-------|--------|
-| None currently | — | — | — | — |
+| Pre-existing TS errors in treater app | Low - doesn't affect auth routes | Fix TanStack Router types in other route files | Dev | Known Issue |
 
 ---
 
@@ -147,32 +156,47 @@ Domain entity (treaters/generators/haulers)
 ### Last Session Summary
 
 **Date:** 2026-01-21
-**Activity:** Roadmap creation via `/gsd:roadmap`
-**Outcome:** Created 6-phase roadmap mapping all 29 v1.1 requirements
+**Activity:** Executed 01-01-PLAN.md (Auth Proxy Route)
+**Outcome:** Created TanStack Start auth proxy infrastructure
+
+**Commits:**
+- `0c76f08` - chore(01-01): align better-auth to version 1.4.10
+- `c099032` - feat(01-01): create auth-server.ts with TanStack Start helpers
+- `72c6f87` - feat(01-01): create auth proxy route at /api/auth/$
+- `a6e08a8` - fix(01-01): add SSR config and cleanup unused import
+
+**Files Created:**
+- apps/treater/src/lib/auth-server.ts
+- apps/treater/src/routes/api/auth/$.ts
+- .planning/phases/01-core-authentication/01-01-SUMMARY.md
 
 **Files Modified:**
-- Created: .planning/ROADMAP.md
-- Created: .planning/STATE.md
-- Updated: .planning/REQUIREMENTS.md (traceability section)
+- packages/convex/package.json
+- apps/treater/vite.config.ts
+- apps/generator/vite.config.ts
+- apps/trucking/vite.config.ts
 
 ### Next Session Goals
 
-1. Run `/gsd:plan-phase 1` to create executable plans for Core Authentication
-2. Verify Better Auth setup is complete
-3. Create first plan for email/password signup implementation
-4. Begin Phase 1 implementation
+1. Execute 01-02-PLAN.md (Login/Signup UI components)
+2. Verify auth proxy route works with dev server
+3. Continue Phase 1 implementation
 
 ### Context for Next Claude
 
 **What you're building:** Multi-tenant auth infrastructure for hospital waste management platform. Treaters create and manage generators (hospitals) and haulers (trucking partners) with role-based access control.
 
-**Where we are:** Just finished roadmap. Phase 1 (Core Authentication) is next. 5 requirements: signup, email verification, login, session persistence, password reset.
+**Where we are:** Plan 01-01 complete. Auth proxy route at `/api/auth/$` is ready. Next is 01-02 (Login/Signup UI).
 
 **What's special:** Using Better Auth organization plugin with bridge table pattern (organizationLinks) to map Better Auth's generic orgs to domain entities (treaters/generators/haulers). All queries must be organization-scoped for tenant isolation.
 
-**Key constraint:** Better Auth 1.4.10 + Convex adapter 0.10.9 already installed. Don't reinstall. Config exists in packages/convex/convex/auth.ts. Just need to implement queries/mutations and UI.
+**Key files created:**
+- `apps/treater/src/lib/auth-server.ts` - Server-side auth helpers
+- `apps/treater/src/routes/api/auth/$.ts` - Auth proxy route
+
+**Key constraint:** Better Auth 1.4.10 + Convex adapter 0.10.9 already installed. Config exists in packages/convex/convex/auth.ts.
 
 ---
 
 **State initialized:** 2026-01-21 after roadmap creation
-**Next update:** After Phase 1 planning
+**Last update:** 2026-01-21 after 01-01-PLAN.md completion
