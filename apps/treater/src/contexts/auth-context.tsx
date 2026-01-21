@@ -1,75 +1,67 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-  type ReactNode,
-} from "react";
-import type { TreaterUser, AuthContextType } from "@hwm/types/auth";
+import { createContext, useContext, type ReactNode } from "react";
+import { useConvexAuth } from "convex/react";
+import { authClient } from "@/lib/auth";
 
-type User = TreaterUser;
+/**
+ * Auth user from Better Auth session
+ * This is the base user from authentication.
+ * Domain-specific user info (treaterId, role, etc.) will be added
+ * in Phase 2 when organization bridge is implemented.
+ */
+interface AuthUser {
+  id: string;
+  email: string;
+  name: string | null;
+  emailVerified: boolean;
+  image?: string | null;
+}
 
-const AUTH_STORAGE_KEY = "hwm-treater-auth";
+interface AuthContextType {
+  user: AuthUser | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  signIn: typeof authClient.signIn;
+  signUp: typeof authClient.signUp;
+  signOut: typeof authClient.signOut;
+}
 
-const AuthContext = createContext<AuthContextType<User> | null>(null);
+const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Use Convex's auth state - this is the source of truth
+  // IMPORTANT: Use useConvexAuth, NOT authClient.useSession()
+  // Better Auth reflects authenticated state before Convex validates the token,
+  // which causes race conditions.
+  const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const stored = localStorage.getItem(AUTH_STORAGE_KEY);
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          setUser(parsed);
+  // Get session data from Better Auth for user details
+  // This is safe because we're gating display on useConvexAuth's isAuthenticated
+  const session = authClient.useSession();
+
+  const isLoading = authLoading;
+
+  // Build user object from Better Auth session data
+  // Only return user when Convex confirms authentication
+  const user: AuthUser | null =
+    isAuthenticated && session.data?.user
+      ? {
+          id: session.data.user.id,
+          email: session.data.user.email,
+          name: session.data.user.name ?? null,
+          emailVerified: session.data.user.emailVerified,
+          image: session.data.user.image ?? null,
         }
-      } catch {
-        localStorage.removeItem(AUTH_STORAGE_KEY);
-      }
-    }
-    setIsLoading(false);
-  }, []);
-
-  const login = useCallback(async (email: string, _password: string) => {
-    const namePart = email.split("@")[0] || "Operator";
-    const formattedName = namePart
-      .replace(/[._]/g, " ")
-      .replace(/\b\w/g, (c) => c.toUpperCase());
-
-    const mockUser: User = {
-      id: "user_" + Math.random().toString(36).substring(2, 9),
-      email,
-      name: formattedName,
-      treaterId: "tre_metro001",
-      treaterName: "Metro Waste Treatment Facility",
-      role: "treater",
-    };
-
-    setUser(mockUser);
-
-    if (typeof window !== "undefined") {
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(mockUser));
-    }
-  }, []);
-
-  const logout = useCallback(() => {
-    setUser(null);
-    if (typeof window !== "undefined") {
-      localStorage.removeItem(AUTH_STORAGE_KEY);
-    }
-  }, []);
+      : null;
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        isAuthenticated: !!user,
+        isAuthenticated,
         isLoading,
-        login,
-        logout,
+        signIn: authClient.signIn,
+        signUp: authClient.signUp,
+        signOut: authClient.signOut,
       }}
     >
       {children}
