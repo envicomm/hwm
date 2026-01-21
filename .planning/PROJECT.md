@@ -8,6 +8,17 @@ A multi-tenant SaaS platform for tracking hospital waste from generation through
 
 Treaters can manage their complete waste tracking ecosystem — creating and overseeing generators and haulers with role-based access control — ensuring regulatory compliance and operational visibility.
 
+## Current Milestone: v1.1 Waste Tracking
+
+**Goal:** Enable complete waste lifecycle tracking from hospital generation through disposal, with QR-based traceability across all three apps.
+
+**Target features:**
+- Waste logging with QR codes (both hospital-generated and pre-manufactured modes)
+- Collection request workflow between generators, treaters, and haulers
+- Treatment processing at facility
+- Disposal batching and final disposal confirmation
+- Real-time status tracking across all transitions
+
 ## Requirements
 
 ### Validated
@@ -52,10 +63,9 @@ Treaters can manage their complete waste tracking ecosystem — creating and ove
 
 <!-- Explicit boundaries. Includes reasoning to prevent re-adding. -->
 
-- Waste bag tracking and lifecycle — deferred to next milestone (auth foundation first)
-- Collection requests and scheduling — deferred (requires auth complete)
-- Treatment processing and certificates — deferred (requires waste tracking)
-- DENR compliance documents (COT, PTT, HazwasteID) — deferred (requires treatment flow)
+- DENR compliance documents (COT, PTT, HazwasteID) — deferred to v1.2 (requires stable waste tracking first)
+- Vision AI for waste classification — deferred (nice-to-have, not core)
+- Driver location tracking — deferred (requires mobile app optimization)
 - Hauler partnerships with multiple treaters — haulers are exclusive to one treater (simplifies access control)
 - Self-registration for generators/haulers — treaters create these accounts directly
 
@@ -97,4 +107,4 @@ Treaters can manage their complete waste tracking ecosystem — creating and ove
 | Scoped visibility (own + linked) | Treaters need oversight; sub-orgs need privacy from each other | — Pending |
 
 ---
-*Last updated: 2026-01-21 after initialization*
+*Last updated: 2026-01-21 after v1.1 milestone start*
