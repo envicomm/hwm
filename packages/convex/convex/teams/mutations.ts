@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { ConvexError } from "convex/values";
 import { authComponent, createAuth } from "../auth";
 import { getBetterAuthOrgFromEntity } from "../organizations/helpers";
+import type { Id } from "../_generated/dataModel";
 
 /**
  * Invite a user to a generator organization.
@@ -173,5 +174,95 @@ export const inviteToTreater = mutation({
 			expiresAt: invitation.expiresAt,
 			treaterName: treater.name,
 		};
+	},
+});
+
+/**
+ * Create domain user record after invitation acceptance.
+ * Called after Better Auth acceptInvitation succeeds.
+ *
+ * This links the Better Auth user to the domain users table with
+ * the correct organization (generator, hauler, or treater).
+ */
+export const createDomainUserFromInvitation = mutation({
+	args: {
+		betterAuthUserId: v.string(),
+		betterAuthOrgId: v.string(),
+		name: v.string(),
+		email: v.string(),
+	},
+	handler: async (ctx, args) => {
+		// 1. Check if domain user already exists
+		const existingUser = await ctx.db
+			.query("users")
+			.withIndex("by_better_auth_user", (q) =>
+				q.eq("betterAuthUserId", args.betterAuthUserId)
+			)
+			.first();
+
+		if (existingUser) {
+			// User already exists - this might be joining additional org
+			// For Phase 4, we assume one user = one org, so just return existing
+			return { userId: existingUser._id, created: false };
+		}
+
+		// 2. Get organization link to determine org type and entity ID
+		const orgLink = await ctx.db
+			.query("organizationLinks")
+			.withIndex("by_better_auth_org", (q) =>
+				q.eq("betterAuthOrgId", args.betterAuthOrgId)
+			)
+			.first();
+
+		if (!orgLink) {
+			throw new ConvexError({
+				message: "Organization link not found",
+				betterAuthOrgId: args.betterAuthOrgId,
+			});
+		}
+
+		// 3. Determine domain role from organization type
+		// Using inline union type (not importing userRole validator - it's for schema validation)
+		let domainRole: "generator" | "treater" | "hauler" | "driver" | "admin";
+		let orgFields: {
+			treaterId?: Id<"treaters">;
+			generatorId?: Id<"generators">;
+			haulerId?: Id<"haulers">;
+		} = {};
+
+		switch (orgLink.organizationType) {
+			case "generator":
+				domainRole = "generator";
+				orgFields = { generatorId: orgLink.generatorId };
+				break;
+			case "hauler":
+				domainRole = "hauler";
+				orgFields = { haulerId: orgLink.haulerId };
+				break;
+			case "treater":
+				domainRole = "treater";
+				orgFields = { treaterId: orgLink.treaterId };
+				break;
+			default:
+				throw new ConvexError({
+					message: "Unknown organization type",
+					organizationType: orgLink.organizationType,
+				});
+		}
+
+		// 4. Create domain user record
+		const now = Date.now();
+		const userId = await ctx.db.insert("users", {
+			name: args.name,
+			email: args.email,
+			betterAuthUserId: args.betterAuthUserId,
+			role: domainRole,
+			...orgFields,
+			isActive: true,
+			createdAt: now,
+			updatedAt: now,
+		});
+
+		return { userId, created: true };
 	},
 });
