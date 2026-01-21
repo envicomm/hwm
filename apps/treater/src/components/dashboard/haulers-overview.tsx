@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { convexQuery } from "@convex-dev/react-query";
 import { api, type Doc } from "@hwm/convex";
@@ -103,6 +104,7 @@ interface HaulersOverviewProps {
 }
 
 export function HaulersOverview({ onAddHauler }: HaulersOverviewProps) {
+	const navigate = useNavigate();
 	const { treaterId, isLoading: treaterLoading } = useActiveTreater();
 	const [searchQuery, setSearchQuery] = useState("");
 	const [filter, setFilter] = useState<"all" | "active" | "inactive">("all");
@@ -135,7 +137,10 @@ export function HaulersOverview({ onAddHauler }: HaulersOverviewProps) {
 	});
 
 	const handleViewDetails = (hauler: Doc<"haulers">) => {
-		console.log("View details for hauler:", hauler._id);
+		navigate({
+			to: "/dashboard/haulers/$haulerId",
+			params: { haulerId: hauler._id },
+		});
 	};
 
 	if (isLoading) {

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import {
   Building2,
   MapPin,
@@ -156,6 +157,7 @@ interface GeneratorsOverviewProps {
 }
 
 export function GeneratorsOverview({ onAddGenerator }: GeneratorsOverviewProps) {
+  const navigate = useNavigate();
   const { treaterId, isLoading: treaterLoading } = useActiveTreater();
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "active" | "inactive">("all");
@@ -191,7 +193,10 @@ export function GeneratorsOverview({ onAddGenerator }: GeneratorsOverviewProps) 
   });
 
   const handleViewDetails = (generator: Doc<"generators">) => {
-    console.log("View details for generator:", generator._id, generator.name);
+    navigate({
+      to: "/dashboard/generators/$generatorId",
+      params: { generatorId: generator._id },
+    });
   };
 
   // Show loading state
