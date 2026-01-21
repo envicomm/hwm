@@ -8,12 +8,10 @@ import { StorageAlerts } from "@/components/dashboard/storage-alerts";
 import { AddGeneratorWizard } from "@/components/dashboard/add-generator-wizard";
 
 export const Route = createFileRoute("/dashboard")({
-  beforeLoad: () => {
-    if (typeof window !== "undefined") {
-      const auth = localStorage.getItem("hwm-treater-auth");
-      if (!auth) {
-        throw redirect({ to: "/" });
-      }
+  beforeLoad: async ({ context }) => {
+    // Redirect to sign-in if not authenticated
+    if (!context.isAuthenticated) {
+      throw redirect({ to: "/auth/$authView", params: { authView: "sign-in" } });
     }
   },
   component: DashboardPage,
