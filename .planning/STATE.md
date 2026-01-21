@@ -43,7 +43,7 @@ Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 |--------|-------|--------|--------|
 | Plans Completed | 5/5 (Phase 1) | 5/5 | Complete |
 | Phases Completed | 0/6 | 6/6 | In Progress |
-| Commits This Phase | 12 | - | On Track |
+| Commits This Phase | 14 | - | On Track |
 | Coverage | 100% | 100% | On Track |
 
 ---
@@ -189,21 +189,22 @@ beforeLoad: async ({ context }) => {
 ### Last Session Summary
 
 **Date:** 2026-01-21
-**Activity:** Executed 01-05-PLAN.md (Gap Closure)
-**Outcome:** Cleaned up dead code and fixed type export issues
+**Activity:** Executed 01-04-PLAN.md (AuthProvider Integration - Gap Closure)
+**Outcome:** Wired AuthProvider into component tree, fixed Header auth API usage
 
 **Commits:**
-- `00074b2` - chore(01-05): delete dead login-page.tsx component
-- `161e199` - fix(01-05): add MockGenerator type alias for backward compatibility
+- `9ca315c` - feat(01-04): wire AuthProvider into root component
+- `5edb777` - feat(01-04): update Header to use Better Auth API
 
 **Files Modified:**
-- apps/treater/src/components/login-page.tsx (deleted)
-- apps/treater/src/lib/mock-data.ts (added type alias)
+- apps/treater/src/routes/__root.tsx (added AuthProvider wrapper)
+- apps/treater/src/components/layout/header.tsx (fixed signOut, null handling)
 
 **Key Outcomes:**
-- Eliminated dead login-page.tsx that used old auth API
-- Added MockGenerator type alias for generators-overview.tsx compatibility
-- No auth-related TypeScript errors remaining
+- AuthProvider now wraps Outlet inside ConvexBetterAuthProvider
+- useAuth() hook available throughout application
+- Header uses signOut() instead of non-existent logout()
+- Handles null user.name gracefully for initials
 
 ### Next Session Goals
 
@@ -232,4 +233,4 @@ beforeLoad: async ({ context }) => {
 ---
 
 **State initialized:** 2026-01-21 after roadmap creation
-**Last update:** 2026-01-21 after 01-05-PLAN.md execution (Phase 1 complete)
+**Last update:** 2026-01-21 after 01-04-PLAN.md execution (Phase 1 complete)
