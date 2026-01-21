@@ -1,417 +1,183 @@
-# Multi-Tenant Auth & Organization Research Summary
+# Project Research Summary
 
-**Project:** Hospital Waste Management (HWM)
-**Research Period:** 2026-01-21
-**Research Focus:** Better Auth + Convex multi-tenant authentication infrastructure
-**Status:** COMPLETE - Ready for roadmap phase planning
-
----
+**Project:** HWM Hospital Waste Management - v1.1 Waste Tracking
+**Domain:** Multi-tenant SaaS for medical waste chain-of-custody tracking
+**Researched:** 2026-01-21
+**Confidence:** HIGH
 
 ## Executive Summary
 
-Hospital Waste Management requires a robust multi-tenant authentication system to support its hierarchical organizational model: treaters (primary tenants) provisioning generators (hospitals) and haulers (trucking partners). Research across four parallel domains confirms that **Better Auth 1.4.9 with Convex adapter 0.10.9 is production-ready for this use case**, providing battle-tested organization plugin capabilities, role-based access control, and cross-domain session sharing.
+Medical waste tracking systems follow a universal pattern: QR/barcode-based item identification with chain-of-custody documentation at every status transition. HWM's existing Convex schema already supports the full waste lifecycle (initialized -> to_be_collected -> collected -> treated -> aggregated -> disposal_requested -> disposed), making this milestone primarily a UI and mutation implementation effort rather than schema design work. The key competitive differentiator is **dual QR mode support** (pre-manufactured bags from treater inventory + hospital-generated QR codes for generic bags), which serves diverse generator capabilities without workflow disruption.
 
-The architecture uses a bridge table pattern (`organizationLinks`) to map Better Auth's generic organizations to domain entities while maintaining explicit tenant filtering in all Convex queries. This approach aligns with 2026 SaaS security best practices around Zero Trust architecture and explicit tenant scoping. The invite-only provisioning model matches enterprise expectations and HWM's hierarchical business model.
+The recommended approach is to build the state machine and audit trail infrastructure first, then layer QR scanning on top. Research reveals that 86% of waste tracking failures stem from poor segregation discipline and inconsistent scanning -- the solution is better UX at scan points, not more features. Three new libraries are needed: `@yudiel/react-qr-scanner` for camera scanning, `qrcode.react` for label generation, and `react-signature-canvas` for pickup confirmation signatures. Convex's native real-time subscriptions handle all status update propagation; no WebSocket or state machine library is required.
 
-**Key finding:** The technology stack is solid and existing in the brownfield setup. Roadmap success depends on disciplined implementation of three patterns: (1) explicit tenant context passing, (2) organization-scoped data queries, and (3) server-side authorization checks that never trust client-provided organization context.
+Critical risks center on state machine race conditions (multiple apps mutating same bag), multi-tenant data leakage (missing tenant filters on queries), and offline scanning failures (hospital basements with no connectivity). All are preventable with server-side validation patterns documented in the pitfalls research. Certificate generation (PTT, COT) should be deferred to v1.2 per scope, focusing v1.1 on the core scan-track-transition workflow.
 
----
+## Key Findings
 
-## Key Findings by Research Domain
+### Recommended Stack
 
-### Technology Stack (STACK.md)
+The existing Convex + React stack is sufficient. Three new runtime packages plus one type package are required.
 
-**Verdict: HIGH confidence - Stack is already installed and partially configured**
+**Stack additions for v1.1:**
+- `@yudiel/react-qr-scanner` (trucking, generator apps): Camera-based QR scanning -- actively maintained, TypeScript, mobile-ready with torch/zoom controls
+- `qrcode.react` (generator, treater apps): QR code generation for labels -- SVG/Canvas output, print-friendly, 1.8M+ weekly downloads
+- `react-signature-canvas` (trucking app): Signature capture for pickup confirmation -- wrapper around proven signature_pad library
+- `@types/react-signature-canvas` (trucking app): TypeScript support
 
-**Core technologies (already in place):**
-- Better Auth 1.4.9 with organization plugin (basic setup)
-- @convex-dev/better-auth 0.10.9 (Convex adapter)
-- Convex 1.31.3 serverless backend
-- React 19, TanStack Router (file-based)
-- Resend for email (invitation notifications)
+**No libraries needed:**
+- State machine: Use TypeScript discriminated unions + Convex mutation validation (XState overkill for linear status flow)
+- Real-time: Convex `useQuery` provides automatic subscriptions
+- PDF generation: Defer to v1.2; use browser print with CSS `@media print` for v1.1
 
-**Required configuration changes (NOT new installs):**
-1. **Access Control Definition** - Create `packages/convex/convex/lib/accessControl.ts` with role definitions (owner, admin, member)
-2. **Organization Link Table** - Already exists in schema; just needs indexes verification
-3. **Auth Helpers** - Create `packages/convex/convex/lib/orgAuth.ts` for membership/role checking patterns
-4. **Client Configuration** - Update `packages/auth/src/client.ts` to add access control to organizationClient
+**Bundle impact:** ~25KB gzipped total (scanner ~15KB, QR gen ~5KB, signature ~5KB)
 
-**New QR/Waste Tracking features require:**
-- `@yudiel/react-qr-scanner` 2.1.0 (mobile camera scanning)
-- `qrcode.react` 4.2.0 (label generation)
-- `react-signature-canvas` 1.1.0 (pickup confirmation)
-- **No state machine library needed** - Use discriminated unions with TypeScript validators
+### Expected Features
 
-**Confidence rationale:** Official Better Auth + Convex documentation verified. Component-mode integration is supported and documented. Version requirements already met. No external services beyond Resend (already configured).
+**Must have (table stakes):**
+- QR code scanning (camera) with back/front camera support
+- Manual waste entry form (type, weight, description, optional photo)
+- QR activation for pre-manufactured bags (scan -> validate inventory -> create wasteBag)
+- QR generation for hospital-generated mode (generate -> display for print -> attach to bag)
+- Collection request workflow (generator requests -> hauler assigns driver -> driver scans)
+- Driver pickup interface (view manifest, scan bags, signature capture, mark complete)
+- Treater intake scanning (verify manifest, record treatment session)
+- Disposal batch creation and seal with parent QR
+- Real-time status display and status history timeline
+- Audit trail with timestamp, actor, location at each transition
 
----
+**Should have (differentiators):**
+- Per-generator QR mode setting (pre_manufactured, hospital_generated, or both)
+- Bulk scan mode for high-volume pickups
+- Treatment method presets (autoclave settings, incineration settings)
+- Manifest reconciliation (compare expected vs. received bags)
 
-### Feature Landscape (FEATURES.md)
+**Defer to v1.2:**
+- Certificate generation (PTT, COT, Disposal Certificate) -- per scope definition
+- Pre-manufactured bag inventory management UI (schema exists)
+- Bag distribution tracking UI (schema exists)
+- Offline scanning with local queue and sync (complexity vs. network availability)
+- Waste volume analytics dashboards (needs historical data)
+- HazwasteID generation (DENR integration, post-MVP)
 
-**Verdict: HIGH confidence - Clear distinction between MVP priorities and post-MVP deferrals**
+### Architecture Approach
 
-**Table Stakes (non-negotiable for competent SaaS):**
-- Email/password authentication with verification
-- Email-based password reset
-- MFA (authenticator app) - enterprise requirement
-- Session management with multi-app context
-- Organization creation (treater onboarding)
-- User invitation via email with role assignment
-- User deactivation for offboarding security
-- Tenant-scoped data isolation in all queries
-- Role-based access control (RBAC)
-- Audit logs for sensitive actions
+Three React apps (generator, treater, trucking) share a single Convex backend. All waste tracking mutations live in `packages/convex/convex/` and are imported via `@hwm/convex/api`. State transitions are validated server-side using an allowed-transitions map; every transition atomically writes both the status update and audit trail entry. Multi-tenant isolation is enforced at the query level using the existing `by_treater` and `by_generator` indexes, with tenant context derived from the authenticated user's organization.
 
-**Differentiators (valuable but not MVP-blocking):**
-- SSO (SAML/OAuth) - defer until $10K+ ARR customer
-- Login history / device tracking
-- Passwordless magic links (improves UX)
-- Custom roles beyond admin/member (learn patterns first)
-- Bulk user import CSV (post-MVP for large treaters)
+**Major components:**
+1. **State Machine Service** (`lib/wasteStateMachine.ts`): Transition validator, allowed-transitions map, status history creation
+2. **QR Scanning Components** (per app): Camera scanner wrapper with manual fallback, scan confirmation UI
+3. **Collection Workflow** (generator + trucking): Request creation, driver assignment, pickup scan loop, signature capture
+4. **Treatment Processing** (treater): Intake scanning, treatment session recording, batch management
+5. **Disposal Batching** (treater + trucking): Batch creation, seal with parent QR, disposal scan
 
-**Anti-Features (explicitly do NOT build):**
-- Public signup for generators - breaks business model
-- Social login as primary auth - conflicts with invite-only
-- Complexity theater: CAPTCHA on every login, complex password rules, forced 90-day rotation
-- Domain verification for auto-provisioning - security risk if implemented wrong
+### Critical Pitfalls
 
-**Feature dependency chain:**
-1. Tenant isolation (foundation)
-2. Authentication core
-3. Organization creation
-4. User invitation
-5. Role-based access control
-6. Audit logging
+1. **State machine race conditions** -- Driver scans "collected" while dispatcher cancels pickup; bag ends up in impossible state. **Prevention:** Server-side validation of current status before every transition; use allowed-transitions map; Convex transaction guarantees atomic status + history write.
 
-**Critical insight:** Invite-only model (treater admins provision generators/haulers) is table stakes, not a differentiator. It aligns with existing business model and enterprise security expectations.
+2. **Multi-tenant data leakage** -- Query returns all waste bags across tenants. **Prevention:** Always filter by `treaterId`; derive tenant context from authenticated user, not request body; code review checklist for every query PR.
 
----
+3. **QR code collision** -- Hospital-generated QR duplicates pre-manufactured QR. **Prevention:** Use UUID v4 for all generated QRs; cross-table uniqueness check against both `wasteBags` and `bagInventory`; namespace QRs by source (HWM-INV-xxx vs HWM-GEN-xxx).
 
-### Architecture (ARCHITECTURE.md)
+4. **Audit trail gaps** -- Status changed but no wasteStatusHistory entry created. **Prevention:** Single atomic mutation for all transitions (never separate operations); server-generated timestamps; never expose update/delete for history table.
 
-**Verdict: HIGH confidence - Clear integration pattern with brownfield compatibility**
-
-**Core architectural decisions:**
-- **Bridge pattern**: `organizationLinks` table maps Better Auth organizations (generic) to domain entities (treaters/generators/haulers)
-- **Cross-domain auth**: `crossDomain` plugin enables session sharing across three apps on different ports
-- **Organization-scoped queries**: All data access filtered by organization membership, NOT row-level security (RLS not needed in server-only context)
-- **Active organization context**: Session tracks `activeOrganizationId` for multi-org users
-- **App routing by org type**: Users auto-routed to correct app (generator/treater/trucking) based on organization type
-
-**Authorization layers (defense in depth):**
-1. Authentication (Better Auth session validation)
-2. Organization membership check
-3. Organization type validation
-4. Role-based permission check
-5. Data scoping by domain entity ID
-
-**Build order confirmed across all research:**
-
-| Phase | Focus | Deliverable | Success Criteria |
-|-------|-------|-------------|------------------|
-| 1 | Foundation | Basic auth, email verification, session management | User can sign up with verified email, session persists |
-| 2 | Organization Bridge | organizationLinks, createTreaterWithOrganization | Treater/generator creation auto-creates Better Auth org |
-| 3 | Data Scoping | Auth helpers, tenant-filtered queries | Cross-org data access prevented, error on unauthorized access |
-| 4 | Cross-App Auth | Multi-app sign-in, organization type routing | Sign in once → authenticated across all three apps |
-| 5 | Invitation Flow | inviteGeneratorAdmin, acceptance pages | Treater invites generator → generator admin gets email → accepts → joins |
-| 6 | RBAC & Permissions | Permission checking utilities, UI guards | Members can't perform admin actions, UI reflects permissions |
-| 7 | Testing & Hardening | Security audit, multi-org user testing | No cross-org leaks, all error cases handled |
-
-**Key pattern: Organization-scoped queries**
-```typescript
-// Required pattern in every query/mutation:
-1. Verify authentication
-2. Get active organization from session
-3. Resolve organization link to domain entity
-4. Validate organization type matches endpoint
-5. Scope all queries to organization's domain entity ID
-```
-
-**Critical anti-patterns to avoid:**
-- Querying without tenant filter (data leak vulnerability)
-- Client-side only authorization (server must re-verify)
-- Storing sensitive domain data in organization metadata
-
----
-
-### Pitfalls (PITFALLS.md)
-
-**Verdict: HIGH confidence - 12 specific pitfalls documented with prevention strategies**
-
-**Critical Pitfalls (rewrite-level severity):**
-
-1. **Tenant Context Leakage** - Queries missing tenant filtering expose cross-org data
-   - *Prevention:* Pass tenant context explicitly, validate at function entry, use typed custom functions
-   - *Phase to address:* Phase 1 (establish pattern immediately)
-
-2. **Role Explosion** - Start with 3 roles, discover you need 20+ specialized roles
-   - *Prevention:* Define capabilities first, then group into roles; use ReBAC if scaling
-   - *Phase to address:* Phase 1 (design correctly upfront)
-
-3. **Brownfield Schema Mismatch** - Existing `users` table conflicts with Better Auth schema
-   - *Prevention:* Add `betterAuthUserId` field to existing table, link via FK, plan migration path
-   - *Phase to address:* Phase 1 (resolve before writing auth code)
-
-4. **Session Context Lost on Org Switch** - Multi-org users switch orgs but operations execute against wrong tenant
-   - *Prevention:* Explicit organization parameter on mutations, server-side active org tracking, validate on every request
-   - *Phase to address:* Phase 2 (when multi-org membership possible)
-
-5. **Invitation Security Holes** - Tokens expire, are reusable, or lack email verification
-   - *Prevention:* 7-day expiration, single-use tokens, email verification, rate limiting, audit trail
-   - *Phase to address:* Phase 3 (when invitation flow implemented)
-
-**Moderate Pitfalls (technical debt or delays):**
-
-6. **JWT Missing Tenant Context** - Extra DB lookups on every request for org membership
-   - *Prevention:* Custom JWT claims or in-memory cache (defer until performance data available)
-
-7. **Cross-App Session Inconsistency** - Session works in one app but not others
-   - *Prevention:* Shared session domain, centralized auth service, consistent Better Auth config
-
-8. **Privilege Creep Without Audit** - Users accumulate permissions over time, ex-employees retain access
-   - *Prevention:* Role replacement (not addition), quarterly access reviews, audit logging
-
-9. **Organization Hierarchy Permission Confusion** - Unclear if Treater admin automatically has Generator admin access
-   - *Prevention:* Document hierarchy explicitly (read vs. write, implicit vs. explicit)
-
-**Minor Pitfalls (annoying but fixable):**
-
-10. **Version Mismatch** - Convex 1.25.0+ required for Better Auth adapter
-11. **Missing Email Verification** - Users sign up with fake emails, can't receive notifications
-12. **Password Reset Without Rate Limiting** - DoS via email flooding or user enumeration
-
-**Testing checklist provided** with 20+ specific scenarios covering tenant isolation, RBAC, multi-org, invitations, sessions, and edge cases.
-
----
+5. **Offline scanning failures** -- Driver scans in hospital basement, mutation never reaches server. **Prevention:** Explicit confirmation UI (don't show success until server confirms); local operation queue with retry; connectivity indicator; forced sync before completing route.
 
 ## Implications for Roadmap
 
-### Recommended Phase Structure
+Based on research, suggested phase structure:
 
-Based on synthesized research, the project naturally breaks into **7 phases** with clear dependencies and deliverables:
+### Phase 1: Core State Machine and Audit Trail
+**Rationale:** All subsequent features depend on reliable status transitions and audit logging. Building this foundation first prevents architectural debt.
+**Delivers:** Transition validator, allowed-transitions map, atomic status+history mutations, tenant-scoped query helpers
+**Addresses:** State history logging, timestamp on creation, location capture
+**Avoids:** Race conditions (#1), audit trail gaps (#4), multi-tenant leakage (#2)
 
-**Phase 1: Core Auth Foundation (Weeks 1-2)**
-- *Why first:* Everything depends on working authentication and tenant isolation
-- *Rationale:* Establish tenant filtering pattern, auth helpers, and security foundation before building features
-- *Pitfall prevention:* Tenant context leakage (#1), schema mismatch (#3), cross-app session (#7)
-- *Deliverables:*
-  - Email/password signup with verification
-  - Password reset via secure email token
-  - Session management with active organization context
-  - Auth helper utilities (requireOrgMembership, getActiveOrganization)
-  - organizationLinks table validation and indexes
-- *Success criteria:*
-  - New user can sign up with verified email
-  - Session persists across page reloads
-  - Multi-org user's active organization tracked correctly
+### Phase 2: QR Scanning Infrastructure
+**Rationale:** Scanning is the primary input mechanism; must be solid before building workflows that depend on it.
+**Delivers:** Camera scanner component with manual fallback, QR validation layer, cross-table uniqueness checks
+**Uses:** @yudiel/react-qr-scanner, qrcode.react
+**Implements:** QR activation (pre-manufactured), QR generation (hospital-generated)
+**Avoids:** QR collision (#3), scanning library brittleness (#8)
 
-**Phase 2: Organization Management & Bridging (Week 2-3)**
-- *Why second:* Bridges Better Auth generic organizations to domain entities
-- *Rationale:* Must complete before data scoping can work; enables treater/generator creation workflows
-- *Pitfall prevention:* Session context loss (#4), hierarchy confusion (#9)
-- *Deliverables:*
-  - Add `betterAuthUserId` field to `users` table (migration for existing users)
-  - Mutation: `createTreaterWithOrganization` (creates treater + Better Auth org + link)
-  - Mutation: `createGeneratorWithOrganization` (treater creates generator + Better Auth org + link)
-  - Organization type validation helpers
-- *Success criteria:*
-  - Creating treater automatically creates Better Auth org with metadata
-  - organizationLinks correctly maps org to domain entity
-  - Can resolve domain entity from org ID and vice versa
+### Phase 3: Waste Logging (Generator App)
+**Rationale:** Logging is the entry point to the lifecycle; needed before collection can happen.
+**Delivers:** Waste entry form, QR mode switching, label display/print, pending bags list
+**Implements:** Manual waste entry, waste type selection, weight capture, photo attachment
 
-**Phase 3: Data Scoping & Query Refactoring (Week 3)**
-- *Why third:* Converts brownfield queries to be organization-scoped
-- *Rationale:* Implements core security pattern; must be complete before cross-app auth and permissions
-- *Pitfall prevention:* Tenant context leakage (#1), client-side authorization (#7 anti-pattern)
-- *Deliverables:*
-  - Refactor existing queries: `listGenerators`, `listWasteBags`, `listCollectionRequests`, etc.
-  - Add `treaterId`/`generatorId`/`haulerId` parameters to queries that lack them
-  - Authorization layer: verify organization membership before returning data
-  - Add database indexes for tenant fields if missing
-- *Success criteria:*
-  - Generator users only see their organization's waste bags
-  - Treater users see all their generators' data
-  - Attempting cross-org access throws error (not silent failure)
+### Phase 4: Collection Workflow (Generator + Trucking Apps)
+**Rationale:** Collection bridges generator and treatment; most complex cross-app workflow.
+**Delivers:** Collection request creation, driver assignment, pickup scan loop, signature capture, manifest display
+**Uses:** react-signature-canvas
+**Implements:** Request pickup, driver pickup interface, bulk scan mode, mark pickup complete
+**Avoids:** OCC thrashing (#5), offline failures (#6), cross-app coordination failures (#7)
 
-**Phase 4: Cross-App Authentication (Week 4)**
-- *Why fourth:* Enables all three apps to work seamlessly with shared sessions
-- *Rationale:* crossDomain plugin already configured; just needs client-side integration
-- *Pitfall prevention:* Cross-app session inconsistency (#7)
-- *Deliverables:*
-  - Add auth client to generator app, treater app, trucking app
-  - Sign-in/sign-up pages on each app
-  - Organization type routing: detect org type, redirect to correct app if mismatch
-  - "Switch organization" UI for multi-org users
-- *Success criteria:*
-  - Sign in on treater app → authenticated on generator and trucking apps
-  - User auto-routed to correct app based on active organization type
-  - Can switch between organizations without re-login
+### Phase 5: Treatment Processing (Treater App)
+**Rationale:** Builds on collection completion; treatment records required before disposal.
+**Delivers:** Intake scanning, treatment session creation, bag-to-treatment linking, treatment batch tracking
+**Implements:** Scan incoming waste, manifest reconciliation, record treatment session, treatment validation logging
 
-**Phase 5: Invitation Workflow (Week 4-5)**
-- *Why fifth:* Enables team building and generator/hauler management by treaters
-- *Rationale:* Depends on Phase 1-4 foundation; high business value
-- *Pitfall prevention:* Invitation security holes (#5), role explosion (#2)
-- *Deliverables:*
-  - Mutation: `inviteGeneratorAdmin` (treater invites generator staff)
-  - Mutation: `inviteHaulerAdmin` (treater invites hauler staff)
-  - Invitation acceptance pages with token validation
-  - Sign-up flow for new invitees (accept invite → create account → join org)
-  - Member management UI: list members, remove members, update roles
-  - Email sending for invitation notifications (Resend integration)
-- *Success criteria:*
-  - Treater can invite generator admin via email
-  - Invitee receives email with accept link (7-day expiration)
-  - Clicking link creates account + joins organization
-  - Generator admin can access generator app after accepting
+### Phase 6: Disposal Batching (Treater + Trucking Apps)
+**Rationale:** Final workflow step; depends on all prior phases.
+**Delivers:** Batch creation UI, batch seal with parent QR generation, disposal scan at disposal site, final status update
+**Implements:** Create disposal batch, add/remove bags, seal batch, generate batch QR, disposal confirmation
+**Avoids:** Batch consistency errors (#11)
 
-**Phase 6: Role-Based Access Control & Permissions (Week 5)**
-- *Why sixth:* Implements fine-grained permissions after core structure is stable
-- *Rationale:* Pattern clarity emerges from Phase 1-5; avoids premature role design
-- *Pitfall prevention:* Role explosion (#2), privilege creep (#8)
-- *Deliverables:*
-  - Access control definition file with resource/action matrix
-  - Fixed roles: owner, admin, member (from Better Auth org plugin)
-  - Domain roles remain: treater, generator, hauler, driver (separate from org roles)
-  - Permission checking utilities for sensitive mutations
-  - Permission-aware UI: hide actions user can't perform
-  - Audit log table and logging of sensitive actions
-- *Success criteria:*
-  - Members can't perform admin actions (enforced at API level)
-  - Generator users can't access treater functions
-  - UI reflects available permissions
-  - Audit log captures who did what, when, in which organization
+### Phase Ordering Rationale
 
-**Phase 7: Testing, Hardening & Documentation (Week 6)**
-- *Why seventh:* Validates security and reliability after all features implemented
-- *Rationale:* Prevents shipping with obvious security gaps
-- *Pitfall prevention:* Version mismatch (#10), email verification (#11), rate limiting (#12)
-- *Deliverables:*
-  - Security audit: cross-org access prevention, permission bypass attempts, session expiration
-  - Multi-org user testing: user belongs to 2+ orgs, data isolation maintained
-  - Performance profiling: identify slow auth queries for later optimization
-  - Comprehensive error handling and recovery flows
-  - Documentation: hierarchy permissions, role definitions, authorization patterns
-  - Rate limiting on password reset (CAPTCHA after 3 failures)
-- *Success criteria:*
-  - No cross-org data leakage
-  - All error cases handled gracefully
-  - Multi-org users work correctly
-  - Performance acceptable (defer micro-optimization to Phase 8+)
+- **Dependencies flow downward:** Each phase depends on the one above (can't scan without state machine, can't collect without logging, can't treat without collecting)
+- **Risk mitigation early:** Critical pitfalls (race conditions, tenant leakage, audit gaps) addressed in Phase 1 before any user-facing features
+- **Cross-app complexity contained:** Phase 4 (Collection) and Phase 6 (Disposal) have multi-app interactions; grouped logically rather than by app
+- **Schema already exists:** No schema migration phases needed; focus is on mutations and UI
 
-### Roadmap Timeline
+### Research Flags
 
-```
-Week 1: Phase 1 (Core Auth) + Phase 2 starts (Org Bridge)
-Week 2: Phase 2 (Org Bridge) + Phase 3 starts (Data Scoping)
-Week 3: Phase 3 (Data Scoping) + Phase 4 starts (Cross-App Auth)
-Week 4: Phase 4 (Cross-App Auth) + Phase 5 starts (Invitations)
-Week 5: Phase 5 (Invitations) + Phase 6 starts (RBAC)
-Week 6: Phase 6 (RBAC) + Phase 7 (Testing & Hardening)
-```
+**Phases likely needing deeper research during planning:**
+- **Phase 4 (Collection Workflow):** Complex driver UX, offline considerations, signature storage patterns -- may need research on mobile PWA offline capabilities
+- **Phase 6 (Disposal Batching):** Parent-child QR relationship, batch aggregation patterns -- less documented than individual item tracking
 
-**Total estimate: 6 weeks** for complete multi-tenant auth infrastructure (subject to team capacity and external blockers).
-
-### Which Phases Need Deeper Research
-
-**Phases with standard, well-documented patterns (no additional research needed):**
-- Phase 1: Core auth patterns published in Better Auth + Convex official docs
-- Phase 3: Data scoping pattern established in Convex authorization guides
-- Phase 4: Cross-domain sessions documented in Better Auth crossDomain plugin docs
-- Phase 6: RBAC patterns documented in authorization best practices across industry
-
-**Phases potentially needing deeper research during planning:**
-- Phase 2: **Organization hierarchy permission model** - Research needed to decide: Does Treater admin automatically view child org data? This is HWM-specific business logic, not a standard pattern.
-- Phase 5: **Invitation workflow edge cases** - Specific to invite-only model; may need research on phishing prevention and email deliverability during implementation.
-- Phase 7: **Audit logging compliance** - DENR Philippines regulatory requirements may dictate which actions must be logged and retention policies.
-
-**Recommend:** Schedule `/gsd:research-phase` for Phases 2 (hierarchy permissions) and 7 (regulatory audit requirements) during the requirements definition stage.
-
----
+**Phases with standard patterns (skip research-phase):**
+- **Phase 1 (State Machine):** Well-documented Convex transaction patterns; pitfalls research provides all needed patterns
+- **Phase 2 (QR Scanning):** Library selection complete; stack research provides integration code
+- **Phase 3 (Waste Logging):** Standard CRUD with form; no special patterns needed
+- **Phase 5 (Treatment):** Similar to logging; intake scanning reuses Phase 2 infrastructure
 
 ## Confidence Assessment
 
-| Area | Confidence | Basis | Gaps/Caveats |
-|------|------------|-------|--------------|
-| **Stack choices** | HIGH | Official Better Auth + Convex docs, npm package verification, version requirements met | QR/waste tracking libs could use live integration testing |
-| **Feature prioritization** | HIGH | Industry best practices (SaaS auth, 2026 enterprise expectations), PRD alignment | HWM-specific role hierarchy needs clarification |
-| **Architecture pattern** | HIGH | Convex authorization docs, Better Auth organization plugin docs, multi-tenant best practices | Brownfield schema mismatch requires careful migration planning |
-| **Build order** | HIGH | Clear dependency chains, phase-by-phase success criteria | Teams with slower velocity may need to resequence phases |
-| **Pitfall prevention** | HIGH | Security research (OWASP), specific Better Auth issues, multi-tenancy incident reports | Organization switching context loss (#4) needs testing with real Better Auth version |
-| **Timeline estimate** | MEDIUM | 6 weeks for complete infrastructure assumes mid-sized team (2-3 eng). Actual velocity unknown. | No adjustment for team size, existing codebase friction, or external integration delays |
+| Area | Confidence | Notes |
+|------|------------|-------|
+| Stack | HIGH | Libraries verified via npm, version-checked, integration patterns documented |
+| Features | HIGH | Industry patterns + DENR requirements + existing PRD alignment |
+| Architecture | HIGH | Existing Convex schema verified; Better Auth integration already researched |
+| Pitfalls | HIGH | Convex OCC docs, UUID RFC, multi-tenant isolation patterns all HIGH sources |
 
-**Overall confidence: HIGH** — Stack is proven, patterns are documented, roadmap sequence is logical. Implementation success depends on discipline in applying security patterns (tenant filtering, server-side auth checks) rather than on technical unknowns.
+**Overall confidence:** HIGH
 
----
+### Gaps to Address
 
-## Gaps to Address During Requirements Definition
+- **Offline sync patterns:** Medium confidence on exact Convex behavior during reconnection. Validate with Convex docs during Phase 4 planning if offline support prioritized.
+- **QR scanner device compatibility:** Library selected but not tested on representative hospital device fleet. Build device test matrix before Phase 2 development.
+- **Certificate deferral scope:** Confirm with stakeholders that PTT/COT can be truly deferred to v1.2 without blocking DENR compliance.
 
-1. **Organization Hierarchy Permissions (Phase 2 blocker)**
-   - *Question:* When Treater admin creates Generator, what permissions do they get?
-   - *Options:*
-     - Model A (Implicit): Treater admin can view/edit all child orgs (simple but less secure)
-     - Model B (Explicit): Treater admin must be invited to each org (complex but stronger isolation)
-   - *Resolution needed before Phase 2*
+## Sources
 
-2. **Regulatory Audit Requirements (Phase 7 blocker)**
-   - *Question:* What does DENR Philippines require for audit trail compliance?
-   - *Specifics:* Which actions must be logged? Retention period? Export format?
-   - *Resolution needed for audit logging design*
+### Primary (HIGH confidence)
+- [Convex OCC Documentation](https://docs.convex.dev/database/advanced/occ) -- transaction atomicity, conflict handling
+- [Convex Real-time](https://docs.convex.dev/realtime) -- automatic subscriptions, dependency tracking
+- [Convex Scheduled Functions](https://docs.convex.dev/scheduling/scheduled-functions) -- background job patterns
+- [UUID RFC 9562](https://www.rfc-editor.org/rfc/rfc9562.html) -- collision probability, format specification
+- [AWS Tenant Isolation Fundamentals](https://docs.aws.amazon.com/whitepapers/latest/saas-architecture-fundamentals/tenant-isolation.html) -- multi-tenant security patterns
 
-3. **QR Code Workflow Integration**
-   - *Question:* How do QR codes link to waste bags during collection?
-   - *Current research:* Stack identifies libraries; not yet integrated with waste lifecycle
-   - *Resolution needed during Phase 3 (data scoping) to ensure queries support scanning workflow*
+### Secondary (MEDIUM confidence)
+- [Medical Waste Management Software](https://www.osplabs.com/medical-waste-management-software/) -- feature expectations
+- [Chain of Custody Protocols](https://www.trihazsolutions.com/medical-waste-chain-of-custody-protocols/) -- documentation requirements
+- [Browser Barcode Scanning Challenges](https://www.dynamsoft.com/blog/insights/browser-barcode-scanning-challenges-best-practices/) -- device compatibility issues
+- [@yudiel/react-qr-scanner](https://github.com/yudielcurbelo/react-qr-scanner) -- library evaluation
+- [qrcode.react](https://github.com/zpao/qrcode.react) -- library evaluation
 
-4. **Email Deliverability & Bounce Handling**
-   - *Question:* Resend is configured, but what's error handling for bounced invitations?
-   - *Edge cases:* Invalid email in invitation, domain blocks (e.g., hospital firewall)
-   - *Resolution needed during Phase 5 (invitation workflow)*
-
-5. **Performance Targets for Multi-Tenant Queries**
-   - *Question:* What's acceptable latency for "list generators" when treater has 50+ generators?
-   - *Current plan:* Indexes on tenant fields; may need optimization later
-   - *Resolution needed if Phase 3 queries are slow*
+### Tertiary (LOW confidence)
+- Offline-first architecture guides -- general patterns, not Convex-specific; needs validation
 
 ---
-
-## Sources Aggregated from Research
-
-**Official Documentation (HIGH confidence):**
-- [Better Auth Organization Plugin](https://www.better-auth.com/docs/plugins/organization)
-- [Better Auth Convex Integration](https://www.better-auth.com/docs/integrations/convex)
-- [Convex Authorization Best Practices](https://stack.convex.dev/authorization)
-- [Convex Row-Level Security](https://stack.convex.dev/row-level-security)
-
-**npm Package Verification (HIGH confidence):**
-- @convex-dev/better-auth (v0.10.9) - Convex adapter
-- @yudiel/react-qr-scanner (v2.1.0) - Mobile scanning
-- qrcode.react (v4.2.0) - QR generation
-- react-signature-canvas (v1.1.0) - Signature capture
-
-**Industry Best Practices (HIGH confidence):**
-- [SaaS Multi-Tenancy Components and Best Practices](https://frontegg.com/)
-- [Multi-Tenant Authorization](https://www.permit.io/blog/best-practices-for-multi-tenant-authorization)
-- [OWASP Top 10 2021](https://owasp.org/Top10/)
-- [NIST Password Guidelines 2024](https://www.nist.gov/)
-
-**Research Articles & Incident Reports (MEDIUM-HIGH confidence):**
-- Tenant isolation security patterns (2025)
-- Better Auth GitHub issues (specific version bugs and workarounds)
-- Multi-tenant SaaS architecture case studies
-
----
-
-## Next Steps for Roadmapper
-
-1. **Validate organization hierarchy model** with product/business team (Gap #1)
-2. **Confirm regulatory audit requirements** with legal/compliance (Gap #2)
-3. **Define audit logging scope** for DENR compliance (Gap #2)
-4. **Confirm timeline & team capacity** for 6-week roadmap
-5. **Schedule Phase 2 research** for organization switching edge cases
-6. **Identify any brownfield blockers** during Phase 1 (auth helpers, schema migration)
-
----
-
-**Summary prepared:** 2026-01-21
-**Researcher:** 4 parallel agents synthesized by Opus
-**Status:** Ready for roadmap phase planning
+*Research completed: 2026-01-21*
+*Ready for roadmap: yes*
