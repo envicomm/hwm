@@ -39,12 +39,14 @@ This roadmap implements multi-tenant authentication infrastructure for HWM, enab
 - Password reset flow with secure token validation
 - organizationLinks table indexes validation
 
-**Plans:** 3 plans
+**Plans:** 5 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — TanStack Start auth proxy and server helpers
-- [ ] 01-02-PLAN.md — SSR auth flow with ConvexBetterAuthProvider
-- [ ] 01-03-PLAN.md — Auth UI redirect logic and route protection
+- [x] 01-01-PLAN.md — TanStack Start auth proxy and server helpers
+- [x] 01-02-PLAN.md — SSR auth flow with ConvexBetterAuthProvider
+- [x] 01-03-PLAN.md — Auth UI redirect logic and route protection
+- [ ] 01-04-PLAN.md — Wire AuthProvider and update Header (gap closure)
+- [ ] 01-05-PLAN.md — Clean up dead code and fix type exports (gap closure)
 
 ---
 
@@ -213,13 +215,13 @@ Plans:
 
 | Phase | Status | Requirements | Completion |
 |-------|--------|--------------|------------|
-| Phase 1: Core Authentication | Planned | 5/29 | 0% |
+| Phase 1: Core Authentication | Gap Closure | 5/29 | 60% |
 | Phase 2: Organization Bridge | Pending | 2/29 | 0% |
 | Phase 3: Organization Management | Pending | 4/29 | 0% |
 | Phase 4: Team Management | Pending | 7/29 | 0% |
 | Phase 5: Role-Based Access Control | Pending | 7/29 | 0% |
 | Phase 6: Cross-App Authentication | Pending | 4/29 | 0% |
-| **Total** | **Pending** | **29/29** | **0%** |
+| **Total** | **In Progress** | **29/29** | **~10%** |
 
 ---
 
@@ -268,4 +270,4 @@ Based on standard depth (3-5 plans per phase) and research recommendations:
 ---
 
 **Last updated:** 2026-01-21
-**Next step:** `/gsd:execute-phase 1` to implement Core Authentication plans
+**Next step:** `/gsd:execute-phase 1` to execute gap closure plans (01-04, 01-05)
