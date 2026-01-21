@@ -19,17 +19,17 @@
 
 ## Current Position
 
-**Phase:** Phase 2 - Organization Bridge (2 of 6) - COMPLETE
-**Plan:** 3/3 plans complete
-**Status:** Phase 2 complete - organization bridge infrastructure ready
-**Last activity:** 2026-01-21 - Completed Phase 2 execution (all 3 plans)
+**Phase:** Phase 3 - Organization Management (3 of 6) - IN PROGRESS
+**Plan:** 1/4 plans complete (03-01-PLAN.md)
+**Status:** Authentication added to organization queries
+**Last activity:** 2026-01-21 - Completed 03-01-PLAN.md (Secure Organization Queries)
 
 ```
-Progress: [████████░░░░░░░░░░░░] ~24%
+Progress: [█████████░░░░░░░░░░░] ~27%
 
 Phase 1: Core Authentication        [██████████] 5/5 plans complete ✓
 Phase 2: Organization Bridge        [██████████] 3/3 plans complete ✓
-Phase 3: Organization Management    [░░░░░░░░░░] 0/? plans
+Phase 3: Organization Management    [██░░░░░░░░] 1/4 plans complete
 Phase 4: Team Management            [░░░░░░░░░░] 0/? plans
 Phase 5: Role-Based Access Control  [░░░░░░░░░░] 0/? plans
 Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
@@ -41,9 +41,9 @@ Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 
 | Metric | Value | Target | Status |
 |--------|-------|--------|--------|
-| Plans Completed | 8 total (5 Phase 1, 3 Phase 2) | - | On Track |
-| Phases Completed | 2/6 | 6/6 | In Progress |
-| Requirements Complete | 7/29 | 29/29 | On Track |
+| Plans Completed | 9 total (5 Phase 1, 3 Phase 2, 1 Phase 3) | - | On Track |
+| Phases Completed | 2/6 (Phase 3 in progress) | 6/6 | In Progress |
+| Requirements Complete | 8/29 | 29/29 | On Track |
 | Coverage | 100% | 100% | On Track |
 
 ---
@@ -72,6 +72,9 @@ Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 | 2026-01-21 | Use authComponent.getAuth pattern within mutations to call auth.api.createOrganization | Enables Better Auth API calls from Convex mutation context | All organization creation uses this pattern |
 | 2026-01-21 | Accept orphaned Better Auth orgs if Convex writes fail (cleanup job for production) | Better Auth org creation is HTTP call before Convex transaction; if Convex fails, orphan exists | MVP tradeoff - cleanup job can be added later |
 | 2026-01-21 | Create treaterHaulerPartners record atomically with hauler creation | Establishes hauler-treater relationship immediately (haulers table has no treaterId field) | Partnership exists from creation, no separate linking step needed |
+| 2026-01-21 | Add treaterId argument to generator detail queries | Prevents cross-tenant access by requiring caller to prove they know which treater owns the generator | getById and getWithOrgLink now require treaterId parameter |
+| 2026-01-21 | Verify hauler partnerships through treaterHaulerPartners table | Haulers don't have direct treaterId - access is many-to-many through partnerships | Detail queries check active partnership exists before returning hauler data |
+| 2026-01-21 | Remove insecure getAll query from haulers | Query returned all haulers without any tenant scoping | Clients must use getByTreater which properly scopes to partnerships |
 
 ### Architecture Patterns Established
 
@@ -126,11 +129,14 @@ beforeLoad: async ({ context }) => {
 **Query Pattern (tenant isolation):**
 ```typescript
 // Required pattern in every query/mutation:
-1. Verify authentication -> getAuthenticatedUser(ctx)
-2. Get active organization -> getActiveOrganization(ctx)
-3. Resolve organization link -> organizationLinks lookup
-4. Validate organization type -> requireOrgType(ctx, "treater")
-5. Scope all queries -> filter by treaterId/generatorId/haulerId
+1. Verify authentication -> requireAuth(ctx)
+2. Detail queries verify ownership:
+   - Generator queries: verify generator.treaterId === args.treaterId
+   - Hauler queries: verify active partnership via treaterHaulerPartners
+3. List queries scope by tenant:
+   - getByTreater filters by treaterId
+   - Uses proper indexes (by_treater, by_generator, by_hauler)
+4. Throw ConvexError for unauthorized access
 ```
 
 **Atomic Organization Creation Pattern (02-03):**
@@ -198,55 +204,48 @@ beforeLoad: async ({ context }) => {
 ### Last Session Summary
 
 **Date:** 2026-01-21
-**Activity:** Executed Phase 2 (Organization Bridge) - all 3 plans
-**Outcome:** Complete organization bridge infrastructure with schema, helpers, and mutations
+**Activity:** Executed Phase 3 Plan 01 (Secure Organization Queries)
+**Outcome:** Added authentication to all generator, hauler, and organizationLinks queries
 
 **Commits:**
-- `73b0d72` - fix(02-02): register organizationLinks table in schema
-- `fcf85fe` - feat(02-02): create organization resolution helpers
-- `7d59571` - feat(02-02): create organizations module barrel export
-- `8872958` - docs(02-02): complete Organization Resolution Helpers plan
-- `c9fa8c5` - feat(02-03): implement atomic organization creation mutations
-- `3017a74` - feat(02-03): export organization mutations from barrel
-- `3ac91d0` - docs(02-03): complete Atomic Organization Creation plan
+- `1004576` - feat(03-01): add authentication to generator queries
+- `02df169` - feat(03-01): add authentication to hauler queries
+- `fc27f0c` - feat(03-01): add authentication to organizationLinks queries
 
-**Files Created/Modified:**
-- `packages/convex/convex/schema/organizationLinks.ts` - parentBetterAuthOrgId + index
-- `packages/convex/convex/schema/users.ts` - betterAuthUserId + index
-- `packages/convex/convex/organizations/helpers.ts` - resolution utilities (262 lines)
-- `packages/convex/convex/organizations/mutations.ts` - atomic creation mutations (255 lines)
-- `packages/convex/convex/organizations/index.ts` - barrel exports
+**Files Modified:**
+- `packages/convex/convex/generators/queries.ts` - Added requireAuth, treaterId authorization
+- `packages/convex/convex/haulers/queries.ts` - Added requireAuth, partnership verification, removed getAll
+- `packages/convex/convex/organizationLinks/queries.ts` - Added requireAuth to all queries
 
 **Key Outcomes:**
-- Schema supports organization hierarchy via parentBetterAuthOrgId
-- Better Auth users linkable to domain users via betterAuthUserId
-- 4 resolution helpers: getDomainEntityFromOrg, getBetterAuthOrgFromEntity, makeOrgLinkData, getDomainUser
-- 3 atomic mutations: createTreaterWithOrganization, createGeneratorWithOrganization, createHaulerWithOrganization
-- All mutations use authComponent.getAuth pattern for Better Auth API calls
-- Type-safe link creation via makeOrgLinkData helper
+- All queries require authentication via requireAuth(ctx)
+- Generator detail queries verify treaterId ownership
+- Hauler detail queries verify active partnership
+- Removed insecure getAll query from haulers
+- Tenant isolation enforced at query boundary
 
 ### Next Session Goals
 
-1. Begin Phase 3: Organization Management
-2. Build organization-scoped queries (listGenerators, listHaulers, etc.)
-3. Create organization management UI on treater app
+1. Continue Phase 3: Organization Management
+2. Execute 03-02-PLAN.md (Organization Management UI)
+3. Build treater app organization management screens
 
 ### Context for Next Claude
 
 **What you're building:** Multi-tenant auth infrastructure for hospital waste management platform. Treaters create and manage generators (hospitals) and haulers (trucking partners) with role-based access control.
 
-**Where we are:** Phase 1 (Core Authentication) and Phase 2 (Organization Bridge) complete. Auth flows work, organization creation mutations ready. Ready for Phase 3 (Organization Management).
+**Where we are:** Phase 1 (Core Authentication) and Phase 2 (Organization Bridge) complete. Phase 3 Plan 01 complete (Secure Organization Queries). All queries now require authentication with tenant isolation.
 
-**What's special:** Using Better Auth organization plugin with bridge table pattern (organizationLinks) to map Better Auth's generic orgs to domain entities (treaters/generators/haulers). All queries must be organization-scoped for tenant isolation.
+**What's special:** Using Better Auth organization plugin with bridge table pattern (organizationLinks) to map Better Auth's generic orgs to domain entities (treaters/generators/haulers). All queries require authentication and enforce tenant isolation.
 
-**Key files (Phase 2):**
-- `packages/convex/convex/schema/organizationLinks.ts` - Bridge table with hierarchy tracking
-- `packages/convex/convex/organizations/helpers.ts` - Resolution utilities
-- `packages/convex/convex/organizations/mutations.ts` - Atomic creation mutations
+**Key files (Phase 3 so far):**
+- `packages/convex/convex/generators/queries.ts` - Authenticated generator queries with treaterId verification
+- `packages/convex/convex/haulers/queries.ts` - Authenticated hauler queries with partnership verification
+- `packages/convex/convex/organizationLinks/queries.ts` - Authenticated org link resolution
 
 **Key constraint:** Better Auth 1.4.10 + Convex adapter 0.10.9. Schema changes are backward-compatible (optional fields).
 
 ---
 
 **State initialized:** 2026-01-21 after roadmap creation
-**Last update:** 2026-01-21 after Phase 2 completion
+**Last update:** 2026-01-21 after Phase 3 Plan 01 completion
