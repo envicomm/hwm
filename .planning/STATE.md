@@ -19,18 +19,18 @@
 
 ## Current Position
 
-**Phase:** Phase 4 - Team Management (4 of 6)
-**Plan:** 4/4 plans complete (04-03 complete, 04-04 may be complete in parallel)
-**Status:** Phase 4 nearing completion
-**Last activity:** 2026-01-22 - Completed 04-03-PLAN.md (Invitation Acceptance)
+**Phase:** Phase 4 - Team Management (4 of 6) - COMPLETE
+**Plan:** 4/4 plans complete
+**Status:** Phase 4 complete, ready for Phase 5
+**Last activity:** 2026-01-22 - Completed 04-04-PLAN.md (Team Management UI)
 
 ```
-Progress: [██████████████░░░░░░] ~60%
+Progress: [████████████████░░░░] ~67%
 
 Phase 1: Core Authentication        [██████████] 5/5 plans complete
 Phase 2: Organization Bridge        [██████████] 3/3 plans complete
 Phase 3: Organization Management    [██████████] 4/4 plans complete
-Phase 4: Team Management            [████████░░] 4/4 plans complete (Wave 2 parallel execution)
+Phase 4: Team Management            [██████████] 4/4 plans complete
 Phase 5: Role-Based Access Control  [░░░░░░░░░░] 0/? plans
 Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 ```
@@ -91,6 +91,8 @@ Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 | 2026-01-22 | Store invitation token in sessionStorage for post-signup flow | Users may need to sign up first; token persists across signup redirect | All accept-invitation routes use this pattern |
 | 2026-01-22 | Create domain user immediately after invitation acceptance | Links Better Auth user to domain users table with correct org reference | createDomainUserFromInvitation mutation handles this |
 | 2026-01-22 | Use nullish coalescing for optional name fallback | Proper TypeScript narrowing for optional user.name field | Prevents type errors in domain user creation |
+| 2026-01-22 | Use Better Auth client API for member operations | authClient.organization.listMembers/updateMemberRole/removeMember provides direct access | No custom Convex queries needed for basic member management |
+| 2026-01-22 | Use query parameter structure for Better Auth client | Better Auth client methods use `{ query: { organizationId } }` wrapper for GET requests | Consistent pattern across listMembers, listInvitations |
 
 ### Architecture Patterns Established
 
@@ -262,59 +264,65 @@ beforeLoad: async ({ context }) => {
 ### Last Session Summary
 
 **Date:** 2026-01-22
-**Activity:** Executed Phase 4 Plan 03 (Invitation Acceptance)
-**Outcome:** Complete invitation acceptance flow with domain user creation
+**Activity:** Executed Phase 4 Plan 04 (Team Management UI)
+**Outcome:** Complete team management page with member list, invitations, and role management
 
 **Commits:**
-- `dcb9b1f` - feat(04-03): add createDomainUserFromInvitation mutation
-- `fd9f13d` - feat(04-03): add accept-invitation routes to all apps
-- `eb7b045` - chore(04-03): update teams barrel export pattern
+- `3e65649` - feat(04-04): create team management components
+- `3857d0c` - feat(04-04): create team management page route
+- `da48762` - feat(04-04): add pending invitations tab
 
 **Files Created:**
-- `apps/generator/src/routes/accept-invitation.tsx` - Invitation acceptance for generator app
-- `apps/trucking/src/routes/accept-invitation.tsx` - Invitation acceptance for trucking app
-- `apps/treater/src/routes/accept-invitation.tsx` - Invitation acceptance for treater app
+- `apps/treater/src/routes/dashboard/team/index.tsx` - Team management page with tabs
+- `apps/treater/src/components/team/member-list.tsx` - Member list table
+- `apps/treater/src/components/team/invite-member-form.tsx` - Invite form using Convex mutation
+- `apps/treater/src/components/team/member-actions.tsx` - Role change and removal dropdown
+- `apps/treater/src/components/team/pending-invitations.tsx` - Pending invitations list
+- `apps/treater/src/components/ui/skeleton.tsx` - Loading skeleton component
+- `apps/treater/src/components/ui/tabs.tsx` - Tabs component
 
 **Files Modified:**
-- `packages/convex/convex/teams/mutations.ts` - Added createDomainUserFromInvitation
-- `packages/convex/convex/teams/index.ts` - Changed to export * from pattern
+- `apps/treater/package.json` - Added sonner and date-fns dependencies
 
 **Key Outcomes:**
-- All three apps have accept-invitation routes
-- Domain users created automatically after invitation acceptance
-- Token persistence in sessionStorage for post-signup flow
-- Teams module uses consistent barrel export pattern
+- Team management page at /dashboard/team with tabbed interface
+- Member list shows name, email, role, join date with actions
+- Invite form uses inviteToTreater mutation from 04-02
+- Pending invitations tab with cancel functionality
+- Better Auth client API for member operations
 
 **Deviations:**
-2 auto-fixes: API access pattern fix (blocking), TypeScript null check fix (bug)
+None - plan executed exactly as written
 
 ### Next Session Goals
 
-1. Complete Phase 4: Verify 04-04 (Team Management UI) is complete
-2. Begin Phase 5: Role-Based Access Control planning
-3. E2E test invitation flow with Resend configured
+1. Begin Phase 5: Role-Based Access Control planning
+2. Research DENR audit logging requirements (Phase 5 blocker)
+3. E2E test full auth + invitation flow with Resend configured
 
 ### Context for Next Claude
 
 **What you're building:** Multi-tenant auth infrastructure for hospital waste management platform. Treaters create and manage generators (hospitals) and haulers (trucking partners) with role-based access control.
 
-**Where we are:** Phase 4 complete. All plans (04-01 through 04-04) executed.
+**Where we are:** Phase 4 complete. All plans (04-01 through 04-04) executed. Ready for Phase 5.
 
-**What's special:** Using Better Auth organization plugin with bridge table pattern (organizationLinks) to map Better Auth's generic orgs to domain entities. Complete invitation flow: create invitation -> send email -> accept invitation -> create domain user.
+**What's special:** Using Better Auth organization plugin with bridge table pattern (organizationLinks) to map Better Auth's generic orgs to domain entities. Complete invitation flow: create invitation -> send email -> accept invitation -> create domain user -> manage team.
 
 **Key files (Phase 4 complete):**
 - `apps/*/src/routes/accept-invitation.tsx` - Invitation acceptance routes
 - `packages/convex/convex/teams/mutations.ts` - All invitation and domain user mutations
-- `apps/treater/src/components/team/*` - Team management UI components (04-04)
+- `apps/treater/src/components/team/*` - Team management UI components
+- `apps/treater/src/routes/dashboard/team/index.tsx` - Team management page
 
 **Key constraints:**
 - Better Auth 1.4.10 + Convex adapter 0.10.9
 - Import Convex API from @hwm/convex root (barrel export)
 - Use api.teams.index.functionName pattern (not api.teams.mutations)
+- Better Auth client uses { query: { ... } } wrapper for GET methods
 - Invitation acceptance: sessionStorage token persistence across signup
 - Domain user creation: look up organizationLinks to determine role
 
 ---
 
 **State initialized:** 2026-01-21 after roadmap creation
-**Last update:** 2026-01-22 after Phase 4 Plan 03 completion
+**Last update:** 2026-01-22 after Phase 4 Plan 04 completion (Phase 4 complete)
