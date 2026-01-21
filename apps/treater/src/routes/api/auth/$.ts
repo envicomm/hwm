@@ -1,4 +1,3 @@
-import { json } from "@tanstack/react-start";
 import { handler } from "@/lib/auth-server";
 
 /**

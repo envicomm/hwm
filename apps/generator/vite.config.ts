@@ -5,6 +5,9 @@ import viteTsConfigPaths from "vite-tsconfig-paths";
 import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
+  ssr: {
+    noExternal: ['@convex-dev/better-auth'],
+  },
   server: {
     port: 3001,
   },
