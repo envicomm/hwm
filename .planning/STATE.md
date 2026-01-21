@@ -20,14 +20,14 @@
 ## Current Position
 
 **Phase:** Phase 1 - Core Authentication (1 of 6)
-**Plan:** 01-02 complete, 01-03 next (3 plans in phase)
-**Status:** In progress
-**Last activity:** 2026-01-21 - Completed 01-02-PLAN.md (SSR Auth Integration)
+**Plan:** 01-03 complete, awaiting human verification checkpoint (3 plans in phase)
+**Status:** Checkpoint - awaiting user verification
+**Last activity:** 2026-01-21 - Completed 01-03-PLAN.md (Auth Redirect Wiring)
 
 ```
-Progress: [████░░░░░░░░░░░░░░░░] ~6%
+Progress: [██████░░░░░░░░░░░░░░] ~10%
 
-Phase 1: Core Authentication        [████░░░░░░] 2/3 plans (01-01, 01-02 done)
+Phase 1: Core Authentication        [████████░░] 3/3 plans (all tasks done, awaiting verification)
 Phase 2: Organization Bridge        [░░░░░░░░░░] 0/? plans
 Phase 3: Organization Management    [░░░░░░░░░░] 0/? plans
 Phase 4: Team Management            [░░░░░░░░░░] 0/? plans
@@ -41,9 +41,9 @@ Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 
 | Metric | Value | Target | Status |
 |--------|-------|--------|--------|
-| Plans Completed | 2/3 (Phase 1) | 3/3 | In Progress |
+| Plans Completed | 3/3 (Phase 1) | 3/3 | Awaiting Verification |
 | Phases Completed | 0/6 | 6/6 | In Progress |
-| Commits This Phase | 7 | - | On Track |
+| Commits This Phase | 10 | - | On Track |
 | Coverage | 100% | 100% | On Track |
 
 ---
@@ -63,6 +63,9 @@ Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 | 2026-01-21 | Add SSR noExternal config for @convex-dev/better-auth | Required for proper SSR bundling | All app vite configs need ssr.noExternal setting |
 | 2026-01-21 | Use useConvexAuth for auth state (not useSession) | Better Auth reflects authenticated before Convex validates token, causing race conditions | Auth context must use useConvexAuth as source of truth |
 | 2026-01-21 | AuthContextType changed to Better Auth API | Replaced login/logout with signIn/signUp/signOut | Breaking change for useAuth() consumers |
+| 2026-01-21 | Use context.isAuthenticated for route guards | Root beforeLoad provides isAuthenticated from server token check | More reliable than localStorage checks |
+| 2026-01-21 | Use parameterized route redirect format | TanStack Router requires params object for dynamic segments | Format: { to: "/auth/$authView", params: { authView: "sign-in" } } |
+| 2026-01-21 | Use AuthView redirectTo prop | @daveyplate/better-auth-ui passes redirectTo through useOnSuccessTransition | Cleaner than manual callback handling |
 
 ### Architecture Patterns Established
 
@@ -97,6 +100,23 @@ beforeLoad (server) -> getToken() -> setAuth(token) -> ConvexBetterAuthProvider
 - Token passed to ConvexBetterAuthProvider as initialToken
 - useConvexAuth for auth state, Better Auth session for user details
 
+**Route Protection Pattern (01-03):**
+```typescript
+// Protected route (e.g., dashboard.tsx):
+beforeLoad: async ({ context }) => {
+  if (!context.isAuthenticated) {
+    throw redirect({ to: "/auth/$authView", params: { authView: "sign-in" } });
+  }
+}
+
+// Auth route (e.g., auth.$authView.tsx):
+beforeLoad: async ({ context }) => {
+  if (context.isAuthenticated) {
+    throw redirect({ to: "/dashboard" });
+  }
+}
+```
+
 **Query Pattern (tenant isolation):**
 ```typescript
 // Required pattern in every query/mutation:
@@ -129,13 +149,13 @@ beforeLoad (server) -> getToken() -> setAuth(token) -> ConvexBetterAuthProvider
 
 ## TODO List
 
-### Immediate (Phase 1 In Progress)
+### Immediate (Phase 1 Checkpoint)
 
 - [x] Complete 01-01-PLAN.md (Auth Proxy Route)
 - [x] Execute 01-02-PLAN.md (SSR Auth Integration)
-- [ ] Execute 01-03-PLAN.md (Email Verification)
-- [ ] Verify Better Auth component is configured correctly in convex.json
-- [ ] Confirm Resend API key is set for email verification
+- [x] Execute 01-03-PLAN.md (Auth Redirect Wiring)
+- [ ] **USER ACTION:** Configure Resend API key for email verification
+- [ ] **USER ACTION:** Verify full auth flow end-to-end
 
 ### Upcoming (Next Phases)
 
@@ -158,6 +178,7 @@ beforeLoad (server) -> getToken() -> setAuth(token) -> ConvexBetterAuthProvider
 | Blocker | Impact | Mitigation | Owner | Status |
 |---------|--------|------------|-------|--------|
 | Pre-existing TS errors in treater app | Low - doesn't affect auth routes | Fix TanStack Router types in other route files | Dev | Known Issue |
+| Resend API key not configured | High - email verification won't work | User must add RESEND_API_KEY env var | User | Pending |
 
 ---
 
@@ -166,34 +187,35 @@ beforeLoad (server) -> getToken() -> setAuth(token) -> ConvexBetterAuthProvider
 ### Last Session Summary
 
 **Date:** 2026-01-21
-**Activity:** Executed 01-02-PLAN.md (SSR Auth Integration)
-**Outcome:** Wired SSR auth flow with ConvexBetterAuthProvider and replaced mock auth
+**Activity:** Executed 01-03-PLAN.md (Auth Redirect Wiring)
+**Outcome:** Wired auth route redirects and protection, awaiting human verification
 
 **Commits:**
-- `9b9746b` - feat(01-02): add convexQueryClient to router context
-- `226e916` - feat(01-02): add SSR auth token loading in root layout
-- `0470e93` - feat(01-02): replace mock auth with Better Auth integration
+- `3a9871a` - feat(01-03): add redirect logic to auth page
+- `93f6a02` - feat(01-03): protect dashboard route with auth check
+- `c74da63` - feat(01-03): update index route with auth-based redirect
 
 **Files Modified:**
-- apps/treater/src/router.tsx
-- apps/treater/src/routes/__root.tsx
-- apps/treater/src/contexts/auth-context.tsx
+- apps/treater/src/routes/auth.$authView.tsx
+- apps/treater/src/routes/dashboard.tsx
+- apps/treater/src/routes/index.tsx
 
 **Key Patterns Established:**
-- SSR auth flow: beforeLoad -> getToken -> ConvexBetterAuthProvider
-- Auth state: useConvexAuth for isAuthenticated, Better Auth session for user details
+- Route protection: beforeLoad checks context.isAuthenticated
+- Parameterized redirect: { to: "/auth/$authView", params: { authView: "sign-in" } }
+- AuthView redirectTo prop for post-auth navigation
 
 ### Next Session Goals
 
-1. Execute 01-03-PLAN.md (Email Verification flow)
-2. Test full auth flow with Convex dev server
-3. Complete Phase 1 implementation
+1. User verifies auth flows work end-to-end
+2. If approved, Phase 1 complete
+3. Begin Phase 2 planning (organization bridge)
 
 ### Context for Next Claude
 
 **What you're building:** Multi-tenant auth infrastructure for hospital waste management platform. Treaters create and manage generators (hospitals) and haulers (trucking partners) with role-based access control.
 
-**Where we are:** Plans 01-01 and 01-02 complete. Auth proxy route at `/api/auth/$` is ready. SSR auth flow wired with ConvexBetterAuthProvider. Next is 01-03 (Email Verification).
+**Where we are:** All 3 plans in Phase 1 executed. Auth proxy at `/api/auth/$`, SSR auth flow wired, route protection in place. Awaiting user verification of full auth flows.
 
 **What's special:** Using Better Auth organization plugin with bridge table pattern (organizationLinks) to map Better Auth's generic orgs to domain entities (treaters/generators/haulers). All queries must be organization-scoped for tenant isolation.
 
@@ -202,10 +224,12 @@ beforeLoad (server) -> getToken() -> setAuth(token) -> ConvexBetterAuthProvider
 - `apps/treater/src/routes/api/auth/$.ts` - Auth proxy route
 - `apps/treater/src/routes/__root.tsx` - SSR auth loading + ConvexBetterAuthProvider
 - `apps/treater/src/contexts/auth-context.tsx` - useConvexAuth-based auth context
+- `apps/treater/src/routes/auth.$authView.tsx` - Auth pages with redirect logic
+- `apps/treater/src/routes/dashboard.tsx` - Protected dashboard route
 
 **Key constraint:** Better Auth 1.4.10 + Convex adapter 0.10.9 already installed. Config exists in packages/convex/convex/auth.ts.
 
 ---
 
 **State initialized:** 2026-01-21 after roadmap creation
-**Last update:** 2026-01-21 after 01-02-PLAN.md completion
+**Last update:** 2026-01-21 after 01-03-PLAN.md execution (checkpoint pending)
