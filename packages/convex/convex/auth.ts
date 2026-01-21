@@ -214,8 +214,22 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
 
 					const inviterName = inviter.user.name || inviter.user.email;
 
-					// Build invitation URL
-					const invitationUrl = `${siteUrl}/accept-invitation?token=${data.id}`;
+					// Determine app URL based on organization type
+					// Each org type routes to its respective app for invitation acceptance
+					let appUrl: string;
+					if (orgType === "generator") {
+						appUrl =
+							process.env.GENERATOR_APP_URL || "http://localhost:3001";
+					} else if (orgType === "hauler") {
+						appUrl =
+							process.env.TRUCKING_APP_URL || "http://localhost:3003";
+					} else {
+						// treater or unknown - use main site
+						appUrl = siteUrl;
+					}
+
+					// Build invitation URL with org-type specific app URL
+					const invitationUrl = `${appUrl}/accept-invitation?token=${data.id}`;
 
 					const html = `
 						<!DOCTYPE html>
