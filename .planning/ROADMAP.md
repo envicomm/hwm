@@ -113,6 +113,14 @@ Plans:
 - Organization management UI on treater app
 - Database indexes for tenant fields (treaterId, generatorId, haulerId)
 
+**Plans:** 4 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — Add authentication to generator/hauler queries
+- [ ] 03-02-PLAN.md — Wire GeneratorsOverview to Convex data
+- [ ] 03-03-PLAN.md — Create HaulersOverview component
+- [ ] 03-04-PLAN.md — Generator and hauler detail pages
+
 ---
 
 ### Phase 4: Team Management
@@ -224,7 +232,7 @@ Plans:
 |-------|--------|--------------|------------|
 | Phase 1: Core Authentication | Complete | 5/29 | 100% |
 | Phase 2: Organization Bridge | Complete | 2/29 | 100% |
-| Phase 3: Organization Management | Pending | 4/29 | 0% |
+| Phase 3: Organization Management | Planned | 4/29 | 0% |
 | Phase 4: Team Management | Pending | 7/29 | 0% |
 | Phase 5: Role-Based Access Control | Pending | 7/29 | 0% |
 | Phase 6: Cross-App Authentication | Pending | 4/29 | 0% |
@@ -277,4 +285,4 @@ Based on standard depth (3-5 plans per phase) and research recommendations:
 ---
 
 **Last updated:** 2026-01-21
-**Next step:** `/gsd:discuss-phase 3` to plan Organization Management phase
+**Next step:** `/gsd:execute-phase 3` to execute Organization Management phase
