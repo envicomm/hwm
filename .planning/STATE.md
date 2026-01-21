@@ -19,16 +19,16 @@
 
 ## Current Position
 
-**Phase:** Phase 1 - Core Authentication (1 of 6)
-**Plan:** 01-05 complete (5 plans in phase, including gap closure)
-**Status:** Phase 1 complete - all plans executed
-**Last activity:** 2026-01-21 - Completed 01-05-PLAN.md (Gap Closure)
+**Phase:** Phase 2 - Organization Bridge (2 of 6)
+**Plan:** 02-01 complete (1 of ~4 plans in phase)
+**Status:** Phase 2 in progress - schema bridge fields complete
+**Last activity:** 2026-01-21 - Completed 02-01-PLAN.md (Schema Bridge Fields)
 
 ```
-Progress: [██████░░░░░░░░░░░░░░] ~10%
+Progress: [██░░░░░░░░░░░░░░░░░░] ~12%
 
 Phase 1: Core Authentication        [██████████] 5/5 plans complete
-Phase 2: Organization Bridge        [░░░░░░░░░░] 0/? plans
+Phase 2: Organization Bridge        [██░░░░░░░░] 1/4 plans
 Phase 3: Organization Management    [░░░░░░░░░░] 0/? plans
 Phase 4: Team Management            [░░░░░░░░░░] 0/? plans
 Phase 5: Role-Based Access Control  [░░░░░░░░░░] 0/? plans
@@ -41,9 +41,9 @@ Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 
 | Metric | Value | Target | Status |
 |--------|-------|--------|--------|
-| Plans Completed | 5/5 (Phase 1) | 5/5 | Complete |
-| Phases Completed | 0/6 | 6/6 | In Progress |
-| Commits This Phase | 14 | - | On Track |
+| Plans Completed | 6 total (5 Phase 1, 1 Phase 2) | - | On Track |
+| Phases Completed | 1/6 | 6/6 | In Progress |
+| Commits This Phase | 1 | - | On Track |
 | Coverage | 100% | 100% | On Track |
 
 ---
@@ -66,6 +66,9 @@ Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 | 2026-01-21 | Use context.isAuthenticated for route guards | Root beforeLoad provides isAuthenticated from server token check | More reliable than localStorage checks |
 | 2026-01-21 | Use parameterized route redirect format | TanStack Router requires params object for dynamic segments | Format: { to: "/auth/$authView", params: { authView: "sign-in" } } |
 | 2026-01-21 | Use AuthView redirectTo prop | @daveyplate/better-auth-ui passes redirectTo through useOnSuccessTransition | Cleaner than manual callback handling |
+| 2026-01-21 | Optional parentBetterAuthOrgId for hierarchy tracking | Enables "all child organizations" queries without domain table joins | Simpler queries, better performance for hierarchy traversal |
+| 2026-01-21 | Optional betterAuthUserId for backward compatibility | Supports existing users and users created before Better Auth integration | Graceful migration path, no breaking changes |
+| 2026-01-21 | Export organizationType validator | Provides type safety for mutations that validate organization types | Better TypeScript support in organization management code |
 
 ### Architecture Patterns Established
 
@@ -189,48 +192,44 @@ beforeLoad: async ({ context }) => {
 ### Last Session Summary
 
 **Date:** 2026-01-21
-**Activity:** Executed 01-04-PLAN.md (AuthProvider Integration - Gap Closure)
-**Outcome:** Wired AuthProvider into component tree, fixed Header auth API usage
+**Activity:** Executed 02-01-PLAN.md (Schema Bridge Fields)
+**Outcome:** Added organization hierarchy and Better Auth user linking to schema
 
 **Commits:**
-- `9ca315c` - feat(01-04): wire AuthProvider into root component
-- `5edb777` - feat(01-04): update Header to use Better Auth API
+- `73b0d72` - fix(02-02): register organizationLinks table in schema (bundled all 3 tasks)
 
 **Files Modified:**
-- apps/treater/src/routes/__root.tsx (added AuthProvider wrapper)
-- apps/treater/src/components/layout/header.tsx (fixed signOut, null handling)
+- packages/convex/convex/schema/organizationLinks.ts (added parentBetterAuthOrgId + index)
+- packages/convex/convex/schema/users.ts (added betterAuthUserId + index)
+- packages/convex/convex/schema/index.ts (exported organizationType, fixed duplicate)
 
 **Key Outcomes:**
-- AuthProvider now wraps Outlet inside ConvexBetterAuthProvider
-- useAuth() hook available throughout application
-- Header uses signOut() instead of non-existent logout()
-- Handles null user.name gracefully for initials
+- organizationLinks supports hierarchy queries via parentBetterAuthOrgId
+- users table can resolve Better Auth users via betterAuthUserId
+- Schema deployed successfully with new indexes
+- Pre-existing TypeScript errors in communications module remain (not plan-related)
 
 ### Next Session Goals
 
-1. User verifies auth flows work end-to-end
-2. If approved, Phase 1 complete
-3. Begin Phase 2 planning (organization bridge)
+1. Continue Phase 2: Organization Bridge plans
+2. Build organization mutations that use these new schema fields
+3. Implement organization hierarchy traversal helpers
 
 ### Context for Next Claude
 
 **What you're building:** Multi-tenant auth infrastructure for hospital waste management platform. Treaters create and manage generators (hospitals) and haulers (trucking partners) with role-based access control.
 
-**Where we are:** All 5 plans in Phase 1 executed (including gap closure). Auth proxy at `/api/auth/$`, SSR auth flow wired, route protection in place, AuthProvider integrated, dead code cleaned up. Ready for user verification of full auth flows.
+**Where we are:** Phase 1 complete (Core Authentication). Phase 2 in progress - just completed 02-01 (Schema Bridge Fields). Schema now has parentBetterAuthOrgId for hierarchy tracking and betterAuthUserId for Better Auth linking.
 
 **What's special:** Using Better Auth organization plugin with bridge table pattern (organizationLinks) to map Better Auth's generic orgs to domain entities (treaters/generators/haulers). All queries must be organization-scoped for tenant isolation.
 
 **Key files:**
-- `apps/treater/src/lib/auth-server.ts` - Server-side auth helpers (getToken)
-- `apps/treater/src/routes/api/auth/$.ts` - Auth proxy route
-- `apps/treater/src/routes/__root.tsx` - SSR auth loading + ConvexBetterAuthProvider
-- `apps/treater/src/contexts/auth-context.tsx` - useConvexAuth-based auth context
-- `apps/treater/src/routes/auth.$authView.tsx` - Auth pages with redirect logic
-- `apps/treater/src/routes/dashboard.tsx` - Protected dashboard route
+- Phase 1 (Auth): `apps/treater/src/lib/auth-server.ts`, `apps/treater/src/routes/api/auth/$.ts`, `apps/treater/src/contexts/auth-context.tsx`
+- Phase 2 (Org Bridge): `packages/convex/convex/schema/organizationLinks.ts`, `packages/convex/convex/schema/users.ts`
 
-**Key constraint:** Better Auth 1.4.10 + Convex adapter 0.10.9 already installed. Config exists in packages/convex/convex/auth.ts.
+**Key constraint:** Better Auth 1.4.10 + Convex adapter 0.10.9 already installed. Schema changes must be backward-compatible (optional fields).
 
 ---
 
 **State initialized:** 2026-01-21 after roadmap creation
-**Last update:** 2026-01-21 after 01-04-PLAN.md execution (Phase 1 complete)
+**Last update:** 2026-01-21 after 02-01-PLAN.md execution (Schema Bridge Fields)
