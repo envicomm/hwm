@@ -9,6 +9,9 @@ export const users = defineTable({
 	phone: v.optional(v.string()),
 	role: userRole,
 
+	// Link to Better Auth user (optional for migration/legacy support)
+	betterAuthUserId: v.optional(v.string()),
+
 	// Organization references (one will be set based on role)
 	treaterId: v.optional(v.id("treaters")),
 	generatorId: v.optional(v.id("generators")),
@@ -19,6 +22,7 @@ export const users = defineTable({
 	updatedAt: v.number(),
 })
 	.index("by_email", ["email"])
+	.index("by_better_auth_user", ["betterAuthUserId"])
 	.index("by_treater", ["treaterId"])
 	.index("by_generator", ["generatorId"])
 	.index("by_hauler", ["haulerId"])

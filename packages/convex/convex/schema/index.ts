@@ -10,6 +10,9 @@ export { treaterHaulerPartners } from "./treaterHaulerPartners";
 // User management
 export { users } from "./users";
 
+// Organization bridge (Better Auth <-> Domain entities)
+export { organizationLinks, organizationType } from "./organizationLinks";
+
 // Bag inventory (pre-manufactured bags)
 export { bagInventory } from "./bagInventory";
 export { bagDistributions } from "./bagDistributions";
