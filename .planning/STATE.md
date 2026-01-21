@@ -20,16 +20,16 @@
 ## Current Position
 
 **Phase:** Phase 3 - Organization Management (3 of 6) - IN PROGRESS
-**Plan:** 1/4 plans complete (03-01-PLAN.md)
-**Status:** Authentication added to organization queries
-**Last activity:** 2026-01-21 - Completed 03-01-PLAN.md (Secure Organization Queries)
+**Plan:** 2/4 plans complete (03-01, 03-02)
+**Status:** Dashboard shows real generators with organization scoping
+**Last activity:** 2026-01-21 - Completed 03-02-PLAN.md (Generator Dashboard UI)
 
 ```
-Progress: [█████████░░░░░░░░░░░] ~27%
+Progress: [█████████░░░░░░░░░░░] ~30%
 
 Phase 1: Core Authentication        [██████████] 5/5 plans complete ✓
 Phase 2: Organization Bridge        [██████████] 3/3 plans complete ✓
-Phase 3: Organization Management    [██░░░░░░░░] 1/4 plans complete
+Phase 3: Organization Management    [█████░░░░░] 2/4 plans complete
 Phase 4: Team Management            [░░░░░░░░░░] 0/? plans
 Phase 5: Role-Based Access Control  [░░░░░░░░░░] 0/? plans
 Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
@@ -41,9 +41,9 @@ Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 
 | Metric | Value | Target | Status |
 |--------|-------|--------|--------|
-| Plans Completed | 9 total (5 Phase 1, 3 Phase 2, 1 Phase 3) | - | On Track |
+| Plans Completed | 10 total (5 Phase 1, 3 Phase 2, 2 Phase 3) | - | On Track |
 | Phases Completed | 2/6 (Phase 3 in progress) | 6/6 | In Progress |
-| Requirements Complete | 8/29 | 29/29 | On Track |
+| Requirements Complete | 9/29 | 29/29 | On Track |
 | Coverage | 100% | 100% | On Track |
 
 ---
@@ -75,6 +75,9 @@ Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 | 2026-01-21 | Add treaterId argument to generator detail queries | Prevents cross-tenant access by requiring caller to prove they know which treater owns the generator | getById and getWithOrgLink now require treaterId parameter |
 | 2026-01-21 | Verify hauler partnerships through treaterHaulerPartners table | Haulers don't have direct treaterId - access is many-to-many through partnerships | Detail queries check active partnership exists before returning hauler data |
 | 2026-01-21 | Remove insecure getAll query from haulers | Query returned all haulers without any tenant scoping | Clients must use getByTreater which properly scopes to partnerships |
+| 2026-01-21 | Import Convex API from @hwm/convex root barrel export | Package exports api, Doc, Id through src/index.ts barrel | Use `import { api } from "@hwm/convex"` not `@hwm/convex/_generated/api` |
+| 2026-01-21 | Access Convex queries via folder.index.functionName notation | Convex generates API with /index barrel exports | Use `api.haulers.index.getByTreater` to access queries through barrel |
+| 2026-01-21 | useActiveTreater pattern for tenant context in React components | Combines Better Auth active org with Convex organizationLinks resolution | All dashboard components use useActiveTreater to get treaterId |
 
 ### Architecture Patterns Established
 
@@ -204,46 +207,59 @@ beforeLoad: async ({ context }) => {
 ### Last Session Summary
 
 **Date:** 2026-01-21
-**Activity:** Executed Phase 3 Plan 01 (Secure Organization Queries)
-**Outcome:** Added authentication to all generator, hauler, and organizationLinks queries
+**Activity:** Executed Phase 3 Plan 03 (Hauler Dashboard Overview)
+**Outcome:** Created HaulersOverview component and integrated into treater dashboard
 
 **Commits:**
-- `1004576` - feat(03-01): add authentication to generator queries
-- `02df169` - feat(03-01): add authentication to hauler queries
-- `fc27f0c` - feat(03-01): add authentication to organizationLinks queries
+- `05637cf` - feat(03-03): create HaulersOverview component
+- `233ab93` - feat(03-03): add HaulersOverview to dashboard
+
+**Files Created:**
+- `apps/treater/src/components/dashboard/haulers-overview.tsx` - Hauler list with search, filters, Convex data
+- `apps/treater/src/hooks/use-active-treater.ts` - Hook to resolve treaterId from Better Auth active org
 
 **Files Modified:**
-- `packages/convex/convex/generators/queries.ts` - Added requireAuth, treaterId authorization
-- `packages/convex/convex/haulers/queries.ts` - Added requireAuth, partnership verification, removed getAll
-- `packages/convex/convex/organizationLinks/queries.ts` - Added requireAuth to all queries
+- `apps/treater/src/routes/dashboard.tsx` - Added HaulersOverview section
 
 **Key Outcomes:**
-- All queries require authentication via requireAuth(ctx)
-- Generator detail queries verify treaterId ownership
-- Hauler detail queries verify active partnership
-- Removed insecure getAll query from haulers
-- Tenant isolation enforced at query boundary
+- Dashboard shows real hauler data from Convex queries
+- Search and active/inactive filters work correctly
+- Loading, error, and empty states implemented
+- useActiveTreater hook provides tenant context for components
+- Established pattern for organization-scoped dashboard sections
+
+**Deviations:**
+- Created useActiveTreater hook (from plan 03-02) as blocking dependency fix
+- Fixed Convex API import paths to use barrel exports from @hwm/convex root
+- Removed unused Users import from lucide-react
 
 ### Next Session Goals
 
 1. Continue Phase 3: Organization Management
-2. Execute 03-02-PLAN.md (Organization Management UI)
-3. Build treater app organization management screens
+2. Execute 03-02-PLAN.md (Organization Management UI) if not complete
+3. Execute 03-04-PLAN.md (Organization Switcher) after 03-02 completes
+4. Complete Phase 3 with all organization management features
 
 ### Context for Next Claude
 
 **What you're building:** Multi-tenant auth infrastructure for hospital waste management platform. Treaters create and manage generators (hospitals) and haulers (trucking partners) with role-based access control.
 
-**Where we are:** Phase 1 (Core Authentication) and Phase 2 (Organization Bridge) complete. Phase 3 Plan 01 complete (Secure Organization Queries). All queries now require authentication with tenant isolation.
+**Where we are:** Phase 1 and 2 complete. Phase 3 has 2/4 plans complete (03-01, 03-03). Dashboard now shows both generators and haulers with real Convex data.
 
-**What's special:** Using Better Auth organization plugin with bridge table pattern (organizationLinks) to map Better Auth's generic orgs to domain entities (treaters/generators/haulers). All queries require authentication and enforce tenant isolation.
+**What's special:** Using Better Auth organization plugin with bridge table pattern (organizationLinks) to map Better Auth's generic orgs to domain entities. All queries require authentication and enforce tenant isolation. Dashboard components use useActiveTreater hook to get tenant context.
 
 **Key files (Phase 3 so far):**
 - `packages/convex/convex/generators/queries.ts` - Authenticated generator queries with treaterId verification
 - `packages/convex/convex/haulers/queries.ts` - Authenticated hauler queries with partnership verification
-- `packages/convex/convex/organizationLinks/queries.ts` - Authenticated org link resolution
+- `apps/treater/src/hooks/use-active-treater.ts` - Resolves treaterId from Better Auth active organization
+- `apps/treater/src/components/dashboard/haulers-overview.tsx` - Hauler list component
+- `apps/treater/src/routes/dashboard.tsx` - Dashboard with generators and haulers sections
 
-**Key constraint:** Better Auth 1.4.10 + Convex adapter 0.10.9. Schema changes are backward-compatible (optional fields).
+**Key constraints:**
+- Better Auth 1.4.10 + Convex adapter 0.10.9
+- Import Convex API from @hwm/convex root (barrel export)
+- Access queries via api.haulers.index.functionName notation
+- Use useActiveTreater for tenant context in components
 
 ---
 
