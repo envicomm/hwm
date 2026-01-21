@@ -20,7 +20,7 @@ export function useActiveTreater() {
 		isPending: linkPending,
 		error: linkError,
 	} = useQuery({
-		...convexQuery(api.organizationLinks.queries.getByBetterAuthOrgId, {
+		...convexQuery(api.organizationLinks.index.getByBetterAuthOrgId, {
 			betterAuthOrgId: activeOrg?.id ?? "",
 		}),
 		enabled: !!activeOrg?.id,
