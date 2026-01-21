@@ -76,8 +76,10 @@ Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 | 2026-01-21 | Verify hauler partnerships through treaterHaulerPartners table | Haulers don't have direct treaterId - access is many-to-many through partnerships | Detail queries check active partnership exists before returning hauler data |
 | 2026-01-21 | Remove insecure getAll query from haulers | Query returned all haulers without any tenant scoping | Clients must use getByTreater which properly scopes to partnerships |
 | 2026-01-21 | Import Convex API from @hwm/convex root barrel export | Package exports api, Doc, Id through src/index.ts barrel | Use `import { api } from "@hwm/convex"` not `@hwm/convex/_generated/api` |
-| 2026-01-21 | Access Convex queries via folder.index.functionName notation | Convex generates API with /index barrel exports | Use `api.haulers.index.getByTreater` to access queries through barrel |
+| 2026-01-21 | Access Convex queries via folder.index.functionName notation | Convex generates API with /index barrel exports | Use `api.generators.index.getByTreater` to access queries through barrel |
 | 2026-01-21 | useActiveTreater pattern for tenant context in React components | Combines Better Auth active org with Convex organizationLinks resolution | All dashboard components use useActiveTreater to get treaterId |
+| 2026-01-21 | Stub computed fields until wasteBags queries available | Storage utilization, pending/treated counts require aggregating wasteBags data | Display placeholder values (0) in UI, calculate in future phase |
+| 2026-01-21 | Client-side filtering for active/inactive generators | Small dataset, simpler query logic, instant filter changes | Fetch all generators (includeInactive: true) and filter in component |
 
 ### Architecture Patterns Established
 
@@ -207,44 +209,41 @@ beforeLoad: async ({ context }) => {
 ### Last Session Summary
 
 **Date:** 2026-01-21
-**Activity:** Executed Phase 3 Plan 03 (Hauler Dashboard Overview)
-**Outcome:** Created HaulersOverview component and integrated into treater dashboard
+**Activity:** Executed Phase 3 Plan 02 (Generator Dashboard UI)
+**Outcome:** Created useActiveTreater hook and refactored GeneratorsOverview to use real Convex data
 
 **Commits:**
-- `05637cf` - feat(03-03): create HaulersOverview component
-- `233ab93` - feat(03-03): add HaulersOverview to dashboard
+- `0ad73b8` - feat(03-02): create useActiveTreater hook
+- `a54c263` - feat(03-02): refactor GeneratorsOverview to use real Convex data
 
 **Files Created:**
-- `apps/treater/src/components/dashboard/haulers-overview.tsx` - Hauler list with search, filters, Convex data
 - `apps/treater/src/hooks/use-active-treater.ts` - Hook to resolve treaterId from Better Auth active org
 
 **Files Modified:**
-- `apps/treater/src/routes/dashboard.tsx` - Added HaulersOverview section
+- `apps/treater/src/components/dashboard/generators-overview.tsx` - Refactored to fetch real data from Convex
 
 **Key Outcomes:**
-- Dashboard shows real hauler data from Convex queries
-- Search and active/inactive filters work correctly
-- Loading, error, and empty states implemented
-- useActiveTreater hook provides tenant context for components
-- Established pattern for organization-scoped dashboard sections
+- useActiveTreater hook resolves Better Auth organization to Convex treaterId
+- GeneratorsOverview fetches real generator data via api.generators.index.getByTreater
+- Loading skeleton and error states implemented
+- Generator cards render with real Convex data (name, address, contact, qrMode, capacity, status)
+- Established pattern for organization-scoped dashboard components
 
 **Deviations:**
-- Created useActiveTreater hook (from plan 03-02) as blocking dependency fix
-- Fixed Convex API import paths to use barrel exports from @hwm/convex root
-- Removed unused Users import from lucide-react
+- None - plan executed exactly as written
 
 ### Next Session Goals
 
 1. Continue Phase 3: Organization Management
-2. Execute 03-02-PLAN.md (Organization Management UI) if not complete
-3. Execute 03-04-PLAN.md (Organization Switcher) after 03-02 completes
+2. Execute 03-03-PLAN.md (Hauler Dashboard Overview)
+3. Execute 03-04-PLAN.md (Organization Switcher)
 4. Complete Phase 3 with all organization management features
 
 ### Context for Next Claude
 
 **What you're building:** Multi-tenant auth infrastructure for hospital waste management platform. Treaters create and manage generators (hospitals) and haulers (trucking partners) with role-based access control.
 
-**Where we are:** Phase 1 and 2 complete. Phase 3 has 2/4 plans complete (03-01, 03-03). Dashboard now shows both generators and haulers with real Convex data.
+**Where we are:** Phase 1 and 2 complete. Phase 3 has 2/4 plans complete (03-01, 03-02). Dashboard now shows generators with real Convex data.
 
 **What's special:** Using Better Auth organization plugin with bridge table pattern (organizationLinks) to map Better Auth's generic orgs to domain entities. All queries require authentication and enforce tenant isolation. Dashboard components use useActiveTreater hook to get tenant context.
 
@@ -252,16 +251,16 @@ beforeLoad: async ({ context }) => {
 - `packages/convex/convex/generators/queries.ts` - Authenticated generator queries with treaterId verification
 - `packages/convex/convex/haulers/queries.ts` - Authenticated hauler queries with partnership verification
 - `apps/treater/src/hooks/use-active-treater.ts` - Resolves treaterId from Better Auth active organization
-- `apps/treater/src/components/dashboard/haulers-overview.tsx` - Hauler list component
-- `apps/treater/src/routes/dashboard.tsx` - Dashboard with generators and haulers sections
+- `apps/treater/src/components/dashboard/generators-overview.tsx` - Generator list component with real Convex data
 
 **Key constraints:**
 - Better Auth 1.4.10 + Convex adapter 0.10.9
 - Import Convex API from @hwm/convex root (barrel export)
-- Access queries via api.haulers.index.functionName notation
+- Access queries via api.generators.index.functionName notation
 - Use useActiveTreater for tenant context in components
+- Computed fields (storage utilization, pending/treated counts) stubbed until wasteBags queries available
 
 ---
 
 **State initialized:** 2026-01-21 after roadmap creation
-**Last update:** 2026-01-21 after Phase 3 Plan 01 completion
+**Last update:** 2026-01-21 after Phase 3 Plan 02 completion
