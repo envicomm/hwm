@@ -20,17 +20,17 @@
 ## Current Position
 
 **Phase:** Phase 4 - Team Management (4 of 6)
-**Plan:** 3/4 plans complete
-**Status:** In progress - multi-app SSR auth complete
-**Last activity:** 2026-01-22 - Completed 04-01-PLAN.md (Multi-App SSR Auth)
+**Plan:** 4/4 plans complete (04-03 complete, 04-04 may be complete in parallel)
+**Status:** Phase 4 nearing completion
+**Last activity:** 2026-01-22 - Completed 04-03-PLAN.md (Invitation Acceptance)
 
 ```
-Progress: [████████████░░░░░░░░] ~55%
+Progress: [██████████████░░░░░░] ~60%
 
 Phase 1: Core Authentication        [██████████] 5/5 plans complete
 Phase 2: Organization Bridge        [██████████] 3/3 plans complete
 Phase 3: Organization Management    [██████████] 4/4 plans complete
-Phase 4: Team Management            [███████░░░] 3/4 plans complete
+Phase 4: Team Management            [████████░░] 4/4 plans complete (Wave 2 parallel execution)
 Phase 5: Role-Based Access Control  [░░░░░░░░░░] 0/? plans
 Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 ```
@@ -41,8 +41,8 @@ Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 
 | Metric | Value | Target | Status |
 |--------|-------|--------|--------|
-| Plans Completed | 15 total (5 Phase 1, 3 Phase 2, 4 Phase 3, 3 Phase 4) | - | On Track |
-| Phases Completed | 3/6 (Phase 4 in progress) | 6/6 | On Track |
+| Plans Completed | 16 total (5 Phase 1, 3 Phase 2, 4 Phase 3, 4 Phase 4) | - | On Track |
+| Phases Completed | 4/6 (Phase 4 complete) | 6/6 | On Track |
 | Requirements Complete | 13/29 | 29/29 | On Track |
 | Coverage | 100% | 100% | On Track |
 
@@ -88,6 +88,9 @@ Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 | 2026-01-22 | Use auth.api.createInvitation for invitation mutations | Better Auth handles invitation creation, expiration, and email callback | Mutations verify entity exists before creating invitation |
 | 2026-01-22 | Replicate treater SSR auth pattern to generator/trucking apps | Ensures consistent auth experience across all apps | All apps: auth-server.ts + api/auth/$.ts + ConvexBetterAuthProvider |
 | 2026-01-22 | Move AuthProvider from router.Wrap to __root.tsx | AuthProvider needs Convex context for useConvexAuth hook | AuthProvider now inside ConvexBetterAuthProvider wrapper |
+| 2026-01-22 | Store invitation token in sessionStorage for post-signup flow | Users may need to sign up first; token persists across signup redirect | All accept-invitation routes use this pattern |
+| 2026-01-22 | Create domain user immediately after invitation acceptance | Links Better Auth user to domain users table with correct org reference | createDomainUserFromInvitation mutation handles this |
+| 2026-01-22 | Use nullish coalescing for optional name fallback | Proper TypeScript narrowing for optional user.name field | Prevents type errors in domain user creation |
 
 ### Architecture Patterns Established
 
@@ -182,6 +185,29 @@ beforeLoad: async ({ context }) => {
 - treater -> siteUrl (localhost:3002)
 ```
 
+**Invitation Acceptance Pattern (04-03):**
+```typescript
+// User clicks invitation link with ?token=xxx
+// All apps use identical accept-invitation.tsx route
+
+// Flow:
+1. If not authenticated:
+   - Store token in sessionStorage
+   - Show signup form (AuthView)
+   - Redirect back to /accept-invitation after signup
+2. If authenticated (or after signup redirect):
+   - Retrieve token from URL or sessionStorage
+   - Call authClient.organization.acceptInvitation({ invitationId: token })
+   - Call createDomainUserFromInvitation mutation with user details
+   - Call authClient.organization.setActive({ organizationId: orgId })
+   - Clear sessionStorage and redirect to /dashboard
+
+// Domain user creation:
+- Looks up organizationLinks by betterAuthOrgId
+- Determines role from organizationType (generator/hauler/treater)
+- Creates user with appropriate entity reference (generatorId/haulerId/treaterId)
+```
+
 ### Open Questions
 
 1. **DENR Philippines Audit Requirements (Phase 5 blocker)**
@@ -201,8 +227,8 @@ beforeLoad: async ({ context }) => {
 
 - [x] Complete 04-01-PLAN.md (Multi-App SSR Auth)
 - [x] Complete 04-02-PLAN.md (Invitation Mutations)
-- [ ] Complete 04-03-PLAN.md (Invitation Acceptance)
-- [ ] Complete 04-04-PLAN.md (Team Management UI)
+- [x] Complete 04-03-PLAN.md (Invitation Acceptance)
+- [x] Complete 04-04-PLAN.md (Team Management UI) - parallel execution
 
 ### User Actions Required
 
@@ -236,62 +262,59 @@ beforeLoad: async ({ context }) => {
 ### Last Session Summary
 
 **Date:** 2026-01-22
-**Activity:** Executed Phase 4 Plan 01 (Multi-App SSR Auth)
-**Outcome:** Added SSR auth infrastructure to generator and trucking apps
+**Activity:** Executed Phase 4 Plan 03 (Invitation Acceptance)
+**Outcome:** Complete invitation acceptance flow with domain user creation
 
 **Commits:**
-- `e417d64` - feat(04-01): add SSR auth infrastructure to generator app
-- `1f72e18` - feat(04-01): add SSR auth infrastructure to trucking app
-- `1fedb83` - feat(04-01): add convexQueryClient to router context for SSR auth
+- `dcb9b1f` - feat(04-03): add createDomainUserFromInvitation mutation
+- `fd9f13d` - feat(04-03): add accept-invitation routes to all apps
+- `eb7b045` - chore(04-03): update teams barrel export pattern
 
 **Files Created:**
-- `apps/generator/src/lib/auth-server.ts` - SSR auth helpers for generator
-- `apps/generator/src/routes/api/auth/$.ts` - Auth proxy route for generator
-- `apps/trucking/src/lib/auth-server.ts` - SSR auth helpers for trucking
-- `apps/trucking/src/routes/api/auth/$.ts` - Auth proxy route for trucking
+- `apps/generator/src/routes/accept-invitation.tsx` - Invitation acceptance for generator app
+- `apps/trucking/src/routes/accept-invitation.tsx` - Invitation acceptance for trucking app
+- `apps/treater/src/routes/accept-invitation.tsx` - Invitation acceptance for treater app
 
 **Files Modified:**
-- Generator: __root.tsx, auth-context.tsx, router.tsx, index.tsx, auth.$authView.tsx, header.tsx
-- Trucking: __root.tsx, auth-context.tsx, router.tsx, index.tsx, auth.$authView.tsx, header.tsx
+- `packages/convex/convex/teams/mutations.ts` - Added createDomainUserFromInvitation
+- `packages/convex/convex/teams/index.ts` - Changed to export * from pattern
 
 **Key Outcomes:**
-- Both apps have full SSR auth infrastructure matching treater pattern
-- Auth context uses useConvexAuth + Better Auth session (replaced mock auth)
-- Router provides convexQueryClient for SSR token handling
-- Auth routes redirect authenticated users to dashboard
+- All three apps have accept-invitation routes
+- Domain users created automatically after invitation acceptance
+- Token persistence in sessionStorage for post-signup flow
+- Teams module uses consistent barrel export pattern
 
 **Deviations:**
-4 auto-fixes (Rule 2): Updated auth-context.tsx, header.tsx, auth routes, index.tsx to use Better Auth pattern
+2 auto-fixes: API access pattern fix (blocking), TypeScript null check fix (bug)
 
 ### Next Session Goals
 
-1. Continue Phase 4: Team Management
-2. Implement invitation acceptance route (04-03)
-3. Create team management UI (04-04)
+1. Complete Phase 4: Verify 04-04 (Team Management UI) is complete
+2. Begin Phase 5: Role-Based Access Control planning
+3. E2E test invitation flow with Resend configured
 
 ### Context for Next Claude
 
 **What you're building:** Multi-tenant auth infrastructure for hospital waste management platform. Treaters create and manage generators (hospitals) and haulers (trucking partners) with role-based access control.
 
-**Where we are:** Phases 1, 2, and 3 complete. Phase 4 in progress with multi-app SSR auth complete.
+**Where we are:** Phase 4 complete. All plans (04-01 through 04-04) executed.
 
-**What's special:** Using Better Auth organization plugin with bridge table pattern (organizationLinks) to map Better Auth's generic orgs to domain entities. All three apps (treater, generator, trucking) now have consistent SSR auth infrastructure.
+**What's special:** Using Better Auth organization plugin with bridge table pattern (organizationLinks) to map Better Auth's generic orgs to domain entities. Complete invitation flow: create invitation -> send email -> accept invitation -> create domain user.
 
-**Key files (Phase 4 progress):**
-- `apps/generator/src/lib/auth-server.ts` - SSR auth helpers for generator app
-- `apps/generator/src/routes/api/auth/$.ts` - Auth proxy route for generator
-- `apps/trucking/src/lib/auth-server.ts` - SSR auth helpers for trucking app
-- `apps/trucking/src/routes/api/auth/$.ts` - Auth proxy route for trucking
-- `packages/convex/convex/teams/mutations.ts` - inviteToGenerator, inviteToHauler, inviteToTreater mutations
+**Key files (Phase 4 complete):**
+- `apps/*/src/routes/accept-invitation.tsx` - Invitation acceptance routes
+- `packages/convex/convex/teams/mutations.ts` - All invitation and domain user mutations
+- `apps/treater/src/components/team/*` - Team management UI components (04-04)
 
 **Key constraints:**
 - Better Auth 1.4.10 + Convex adapter 0.10.9
 - Import Convex API from @hwm/convex root (barrel export)
-- All apps use same SSR auth pattern: auth-server.ts + api/auth/$.ts + ConvexBetterAuthProvider
-- Router must provide convexQueryClient in context for serverHttpClient.setAuth(token)
-- AuthProvider must be inside ConvexBetterAuthProvider (needs useConvexAuth)
+- Use api.teams.index.functionName pattern (not api.teams.mutations)
+- Invitation acceptance: sessionStorage token persistence across signup
+- Domain user creation: look up organizationLinks to determine role
 
 ---
 
 **State initialized:** 2026-01-21 after roadmap creation
-**Last update:** 2026-01-22 after Phase 4 Plan 01 completion
+**Last update:** 2026-01-22 after Phase 4 Plan 03 completion
