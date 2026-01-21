@@ -1,5 +1,6 @@
 import { query } from "../_generated/server";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
+import { requireAuth } from "../lib/auth";
 
 // Get all haulers partnered with a treater
 export const getByTreater = query({
@@ -8,6 +9,8 @@ export const getByTreater = query({
 		includeInactive: v.optional(v.boolean()),
 	},
 	handler: async (ctx, args) => {
+		await requireAuth(ctx);
+
 		// Get all partnerships for this treater
 		const partnerships = await ctx.db
 			.query("treaterHaulerPartners")
@@ -35,9 +38,26 @@ export const getByTreater = query({
 export const getById = query({
 	args: {
 		haulerId: v.id("haulers"),
+		treaterId: v.id("treaters"),
 	},
 	handler: async (ctx, args) => {
-		return await ctx.db.get(args.haulerId);
+		await requireAuth(ctx);
+
+		const hauler = await ctx.db.get(args.haulerId);
+		if (!hauler) return null;
+
+		// Verify partnership exists between hauler and treater
+		const partnership = await ctx.db
+			.query("treaterHaulerPartners")
+			.withIndex("by_treater", (q) => q.eq("treaterId", args.treaterId))
+			.collect()
+			.then(partnerships => partnerships.find(p => p.haulerId === args.haulerId && p.isActive));
+
+		if (!partnership) {
+			throw new ConvexError("Access denied: No active partnership with this hauler");
+		}
+
+		return hauler;
 	},
 });
 
@@ -45,10 +65,24 @@ export const getById = query({
 export const getWithOrgLink = query({
 	args: {
 		haulerId: v.id("haulers"),
+		treaterId: v.id("treaters"),
 	},
 	handler: async (ctx, args) => {
+		await requireAuth(ctx);
+
 		const hauler = await ctx.db.get(args.haulerId);
 		if (!hauler) return null;
+
+		// Verify partnership exists between hauler and treater
+		const partnership = await ctx.db
+			.query("treaterHaulerPartners")
+			.withIndex("by_treater", (q) => q.eq("treaterId", args.treaterId))
+			.collect()
+			.then(partnerships => partnerships.find(p => p.haulerId === args.haulerId && p.isActive));
+
+		if (!partnership) {
+			throw new ConvexError("Access denied: No active partnership with this hauler");
+		}
 
 		const orgLink = await ctx.db
 			.query("organizationLinks")
@@ -62,18 +96,3 @@ export const getWithOrgLink = query({
 	},
 });
 
-// Get all active haulers
-export const getAll = query({
-	args: {
-		includeInactive: v.optional(v.boolean()),
-	},
-	handler: async (ctx, args) => {
-		const haulers = await ctx.db.query("haulers").collect();
-
-		if (args.includeInactive) {
-			return haulers;
-		}
-
-		return haulers.filter((h) => h.isActive);
-	},
-});
