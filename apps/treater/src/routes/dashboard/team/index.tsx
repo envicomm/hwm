@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MemberList } from "@/components/team/member-list";
 import { InviteMemberForm } from "@/components/team/invite-member-form";
+import { PendingInvitations } from "@/components/team/pending-invitations";
 import { useQueryClient } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/dashboard/team/")({
@@ -74,6 +75,7 @@ function TeamPage() {
 				<TabsList>
 					<TabsTrigger value="members">Team Members</TabsTrigger>
 					<TabsTrigger value="invite">Invite Member</TabsTrigger>
+					<TabsTrigger value="pending">Pending Invitations</TabsTrigger>
 				</TabsList>
 
 				<TabsContent value="members">
@@ -106,6 +108,20 @@ function TeamPage() {
 								treaterId={treaterId}
 								onSuccess={handleInviteSuccess}
 							/>
+						</CardContent>
+					</Card>
+				</TabsContent>
+
+				<TabsContent value="pending">
+					<Card>
+						<CardHeader>
+							<CardTitle>Pending Invitations</CardTitle>
+							<CardDescription>
+								Invitations that haven't been accepted yet
+							</CardDescription>
+						</CardHeader>
+						<CardContent>
+							<PendingInvitations organizationId={activeOrg.id} />
 						</CardContent>
 					</Card>
 				</TabsContent>
