@@ -20,15 +20,15 @@
 ## Current Position
 
 **Phase:** Phase 2 - Organization Bridge (2 of 6)
-**Plan:** 02-01 complete (1 of ~4 plans in phase)
-**Status:** Phase 2 in progress - schema bridge fields complete
-**Last activity:** 2026-01-21 - Completed 02-01-PLAN.md (Schema Bridge Fields)
+**Plan:** 02-03 complete (3 of ~4 plans in phase)
+**Status:** Phase 2 in progress - organization creation mutations complete
+**Last activity:** 2026-01-21 - Completed 02-03-PLAN.md (Atomic Organization Creation)
 
 ```
-Progress: [██░░░░░░░░░░░░░░░░░░] ~12%
+Progress: [███░░░░░░░░░░░░░░░░░] ~18%
 
 Phase 1: Core Authentication        [██████████] 5/5 plans complete
-Phase 2: Organization Bridge        [██░░░░░░░░] 1/4 plans
+Phase 2: Organization Bridge        [████████░░] 3/4 plans
 Phase 3: Organization Management    [░░░░░░░░░░] 0/? plans
 Phase 4: Team Management            [░░░░░░░░░░] 0/? plans
 Phase 5: Role-Based Access Control  [░░░░░░░░░░] 0/? plans
@@ -41,9 +41,9 @@ Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 
 | Metric | Value | Target | Status |
 |--------|-------|--------|--------|
-| Plans Completed | 6 total (5 Phase 1, 1 Phase 2) | - | On Track |
+| Plans Completed | 8 total (5 Phase 1, 3 Phase 2) | - | On Track |
 | Phases Completed | 1/6 | 6/6 | In Progress |
-| Commits This Phase | 1 | - | On Track |
+| Commits This Phase | 5 | - | On Track |
 | Coverage | 100% | 100% | On Track |
 
 ---
@@ -69,6 +69,9 @@ Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 | 2026-01-21 | Optional parentBetterAuthOrgId for hierarchy tracking | Enables "all child organizations" queries without domain table joins | Simpler queries, better performance for hierarchy traversal |
 | 2026-01-21 | Optional betterAuthUserId for backward compatibility | Supports existing users and users created before Better Auth integration | Graceful migration path, no breaking changes |
 | 2026-01-21 | Export organizationType validator | Provides type safety for mutations that validate organization types | Better TypeScript support in organization management code |
+| 2026-01-21 | Use authComponent.getAuth pattern within mutations to call auth.api.createOrganization | Enables Better Auth API calls from Convex mutation context | All organization creation uses this pattern |
+| 2026-01-21 | Accept orphaned Better Auth orgs if Convex writes fail (cleanup job for production) | Better Auth org creation is HTTP call before Convex transaction; if Convex fails, orphan exists | MVP tradeoff - cleanup job can be added later |
+| 2026-01-21 | Create treaterHaulerPartners record atomically with hauler creation | Establishes hauler-treater relationship immediately (haulers table has no treaterId field) | Partnership exists from creation, no separate linking step needed |
 
 ### Architecture Patterns Established
 
@@ -129,6 +132,21 @@ beforeLoad: async ({ context }) => {
 4. Validate organization type -> requireOrgType(ctx, "treater")
 5. Scope all queries -> filter by treaterId/generatorId/haulerId
 ```
+
+**Atomic Organization Creation Pattern (02-03):**
+```typescript
+// Create domain entity + Better Auth org + link atomically:
+1. Get auth context -> authComponent.getAuth(createAuth, ctx)
+2. Get parent org (for child orgs) -> getBetterAuthOrgFromEntity(ctx, "treater", treaterId)
+3. Generate slug -> name.toLowerCase().replace(/[^a-z0-9]+/g, "-")
+4. Create Better Auth org -> auth.api.createOrganization({ name, slug, metadata })
+5. Create domain entity -> ctx.db.insert("treaters|generators|haulers", {...})
+6. Create link -> ctx.db.insert("organizationLinks", makeOrgLinkData(...))
+7. Create partnership (haulers only) -> ctx.db.insert("treaterHaulerPartners", {...})
+```
+- Top-level orgs (treaters): no parentBetterAuthOrgId
+- Child orgs (generators, haulers): set parentBetterAuthOrgId to parent's betterAuthOrgId
+- Note: If Convex writes fail after Better Auth org created, orphan exists (acceptable for MVP)
 
 ### Open Questions
 
@@ -192,28 +210,30 @@ beforeLoad: async ({ context }) => {
 ### Last Session Summary
 
 **Date:** 2026-01-21
-**Activity:** Executed 02-01-PLAN.md (Schema Bridge Fields)
-**Outcome:** Added organization hierarchy and Better Auth user linking to schema
+**Activity:** Executed 02-03-PLAN.md (Atomic Organization Creation)
+**Outcome:** Implemented three mutations that atomically create domain entities with Better Auth organizations and bridge links
 
 **Commits:**
-- `73b0d72` - fix(02-02): register organizationLinks table in schema (bundled all 3 tasks)
+- `c9fa8c5` - feat(02-03): implement atomic organization creation mutations
+- `3017a74` - feat(02-03): export organization mutations from barrel
 
 **Files Modified:**
-- packages/convex/convex/schema/organizationLinks.ts (added parentBetterAuthOrgId + index)
-- packages/convex/convex/schema/users.ts (added betterAuthUserId + index)
-- packages/convex/convex/schema/index.ts (exported organizationType, fixed duplicate)
+- packages/convex/convex/organizations/mutations.ts (created - 3 mutations)
+- packages/convex/convex/organizations/index.ts (export mutations)
 
 **Key Outcomes:**
-- organizationLinks supports hierarchy queries via parentBetterAuthOrgId
-- users table can resolve Better Auth users via betterAuthUserId
-- Schema deployed successfully with new indexes
-- Pre-existing TypeScript errors in communications module remain (not plan-related)
+- createTreaterWithOrganization: atomic treater + Better Auth org + link
+- createGeneratorWithOrganization: atomic generator with parent hierarchy tracking
+- createHaulerWithOrganization: atomic hauler with partnership record
+- All use authComponent.getAuth pattern for Better Auth API calls
+- Type-safe link creation via makeOrgLinkData helper
+- Pattern established for atomic entity + org + link creation
 
 ### Next Session Goals
 
-1. Continue Phase 2: Organization Bridge plans
-2. Build organization mutations that use these new schema fields
-3. Implement organization hierarchy traversal helpers
+1. Continue Phase 2: Organization Bridge plans (1 plan remaining)
+2. Build organization queries and management utilities
+3. Test end-to-end organization creation flow
 
 ### Context for Next Claude
 
