@@ -13,20 +13,22 @@ import {
 import { Bell, ChevronDown, LogOut, Settings, User } from "lucide-react";
 
 export function Header() {
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await signOut();
     navigate({ to: "/" });
   };
 
   const initials = user?.name
-    ?.split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
+    ? user.name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
+    : "U";
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/50 bg-background/80 backdrop-blur-sm px-6">
@@ -34,7 +36,7 @@ export function Header() {
       <div className="flex items-center gap-3">
         <div>
           <h1 className="text-sm font-semibold text-foreground">
-            {user?.haulerName || "Fleet Management"}
+            Fleet Management
           </h1>
           <p className="text-xs text-muted-foreground">
             Operations Dashboard
