@@ -100,8 +100,8 @@ Populated during roadmap creation.
 | AUTH-05 | Phase 4 | Pending |
 | AUTH-06 | Phase 4 | Pending |
 | AUTH-07 | Phase 1 | Complete |
-| ORG-01 | Phase 2 | Pending |
-| ORG-02 | Phase 2 | Pending |
+| ORG-01 | Phase 2 | Complete |
+| ORG-02 | Phase 2 | Complete |
 | ORG-03 | Phase 3 | Pending |
 | ORG-04 | Phase 3 | Pending |
 | ORG-05 | Phase 3 | Pending |
@@ -130,4 +130,4 @@ Populated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-21*
-*Last updated: 2026-01-21 after Phase 1 completion*
+*Last updated: 2026-01-21 after Phase 2 completion*

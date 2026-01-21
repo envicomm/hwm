@@ -19,16 +19,16 @@
 
 ## Current Position
 
-**Phase:** Phase 2 - Organization Bridge (2 of 6)
-**Plan:** 02-03 complete (3 of ~4 plans in phase)
-**Status:** Phase 2 in progress - organization creation mutations complete
-**Last activity:** 2026-01-21 - Completed 02-03-PLAN.md (Atomic Organization Creation)
+**Phase:** Phase 2 - Organization Bridge (2 of 6) - COMPLETE
+**Plan:** 3/3 plans complete
+**Status:** Phase 2 complete - organization bridge infrastructure ready
+**Last activity:** 2026-01-21 - Completed Phase 2 execution (all 3 plans)
 
 ```
-Progress: [███░░░░░░░░░░░░░░░░░] ~18%
+Progress: [████████░░░░░░░░░░░░] ~24%
 
-Phase 1: Core Authentication        [██████████] 5/5 plans complete
-Phase 2: Organization Bridge        [████████░░] 3/4 plans
+Phase 1: Core Authentication        [██████████] 5/5 plans complete ✓
+Phase 2: Organization Bridge        [██████████] 3/3 plans complete ✓
 Phase 3: Organization Management    [░░░░░░░░░░] 0/? plans
 Phase 4: Team Management            [░░░░░░░░░░] 0/? plans
 Phase 5: Role-Based Access Control  [░░░░░░░░░░] 0/? plans
@@ -42,8 +42,8 @@ Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 | Metric | Value | Target | Status |
 |--------|-------|--------|--------|
 | Plans Completed | 8 total (5 Phase 1, 3 Phase 2) | - | On Track |
-| Phases Completed | 1/6 | 6/6 | In Progress |
-| Commits This Phase | 5 | - | On Track |
+| Phases Completed | 2/6 | 6/6 | In Progress |
+| Requirements Complete | 7/29 | 29/29 | On Track |
 | Coverage | 100% | 100% | On Track |
 
 ---
@@ -150,19 +150,12 @@ beforeLoad: async ({ context }) => {
 
 ### Open Questions
 
-1. **Organization Hierarchy Permissions (Phase 2 blocker)**
-   - Question: When Treater admin creates Generator, what permissions do they get?
-   - Options:
-     - Model A (Implicit): Treater admin can view/edit all child orgs (simple but less secure)
-     - Model B (Explicit): Treater admin must be invited to each org (complex but stronger isolation)
-   - Status: Needs business decision before Phase 2 planning
-
-2. **DENR Philippines Audit Requirements (Phase 5 blocker)**
+1. **DENR Philippines Audit Requirements (Phase 5 blocker)**
    - Question: What must be logged for DENR compliance?
    - Specifics: Which actions, retention period, export format?
    - Status: Needs legal/compliance input before audit logging design
 
-3. **Multi-Org User UX (Phase 6)**
+2. **Multi-Org User UX (Phase 6)**
    - Question: How should "switch organization" UI work for users in multiple orgs?
    - Status: Will design during Phase 6 planning based on Phase 1-5 learnings
 
@@ -170,27 +163,22 @@ beforeLoad: async ({ context }) => {
 
 ## TODO List
 
-### Immediate (Phase 1 Complete)
+### Phase 2 Complete
 
-- [x] Complete 01-01-PLAN.md (Auth Proxy Route)
-- [x] Execute 01-02-PLAN.md (SSR Auth Integration)
-- [x] Execute 01-03-PLAN.md (Auth Redirect Wiring)
-- [x] Execute 01-04-PLAN.md (AuthProvider Integration)
-- [x] Execute 01-05-PLAN.md (Gap Closure - dead code cleanup)
+- [x] Complete 02-01-PLAN.md (Schema Bridge Fields)
+- [x] Complete 02-02-PLAN.md (Organization Resolution Helpers)
+- [x] Complete 02-03-PLAN.md (Atomic Organization Creation)
 - [ ] **USER ACTION:** Configure Resend API key for email verification
 - [ ] **USER ACTION:** Verify full auth flow end-to-end
 
 ### Upcoming (Next Phases)
 
-- [ ] Decide organization hierarchy permission model (Phase 2 blocker)
 - [ ] Research DENR audit logging requirements (Phase 5)
-- [ ] Plan migration strategy for existing users table (Phase 2)
 - [ ] Design invitation acceptance UX (Phase 4)
 - [ ] Define comprehensive permission matrix (Phase 5)
 
 ### Research Needed
 
-- [ ] Schedule `/gsd:research-phase 2` for organization hierarchy permissions
 - [ ] Contact legal/compliance for DENR audit requirements (Phase 5)
 - [ ] Test Better Auth crossDomain plugin with actual 3-app setup (Phase 6)
 
@@ -200,7 +188,7 @@ beforeLoad: async ({ context }) => {
 
 | Blocker | Impact | Mitigation | Owner | Status |
 |---------|--------|------------|-------|--------|
-| Pre-existing TS errors in treater app | Low - doesn't affect auth routes | Fix TanStack Router types in other route files | Dev | Known Issue |
+| Pre-existing TS errors in communications module | Low - doesn't affect auth routes | Fix types in communications/email/index.ts | Dev | Known Issue |
 | Resend API key not configured | High - email verification won't work | User must add RESEND_API_KEY env var | User | Pending |
 
 ---
@@ -210,46 +198,55 @@ beforeLoad: async ({ context }) => {
 ### Last Session Summary
 
 **Date:** 2026-01-21
-**Activity:** Executed 02-03-PLAN.md (Atomic Organization Creation)
-**Outcome:** Implemented three mutations that atomically create domain entities with Better Auth organizations and bridge links
+**Activity:** Executed Phase 2 (Organization Bridge) - all 3 plans
+**Outcome:** Complete organization bridge infrastructure with schema, helpers, and mutations
 
 **Commits:**
+- `73b0d72` - fix(02-02): register organizationLinks table in schema
+- `fcf85fe` - feat(02-02): create organization resolution helpers
+- `7d59571` - feat(02-02): create organizations module barrel export
+- `8872958` - docs(02-02): complete Organization Resolution Helpers plan
 - `c9fa8c5` - feat(02-03): implement atomic organization creation mutations
 - `3017a74` - feat(02-03): export organization mutations from barrel
+- `3ac91d0` - docs(02-03): complete Atomic Organization Creation plan
 
-**Files Modified:**
-- packages/convex/convex/organizations/mutations.ts (created - 3 mutations)
-- packages/convex/convex/organizations/index.ts (export mutations)
+**Files Created/Modified:**
+- `packages/convex/convex/schema/organizationLinks.ts` - parentBetterAuthOrgId + index
+- `packages/convex/convex/schema/users.ts` - betterAuthUserId + index
+- `packages/convex/convex/organizations/helpers.ts` - resolution utilities (262 lines)
+- `packages/convex/convex/organizations/mutations.ts` - atomic creation mutations (255 lines)
+- `packages/convex/convex/organizations/index.ts` - barrel exports
 
 **Key Outcomes:**
-- createTreaterWithOrganization: atomic treater + Better Auth org + link
-- createGeneratorWithOrganization: atomic generator with parent hierarchy tracking
-- createHaulerWithOrganization: atomic hauler with partnership record
-- All use authComponent.getAuth pattern for Better Auth API calls
+- Schema supports organization hierarchy via parentBetterAuthOrgId
+- Better Auth users linkable to domain users via betterAuthUserId
+- 4 resolution helpers: getDomainEntityFromOrg, getBetterAuthOrgFromEntity, makeOrgLinkData, getDomainUser
+- 3 atomic mutations: createTreaterWithOrganization, createGeneratorWithOrganization, createHaulerWithOrganization
+- All mutations use authComponent.getAuth pattern for Better Auth API calls
 - Type-safe link creation via makeOrgLinkData helper
-- Pattern established for atomic entity + org + link creation
 
 ### Next Session Goals
 
-1. Continue Phase 2: Organization Bridge plans (1 plan remaining)
-2. Build organization queries and management utilities
-3. Test end-to-end organization creation flow
+1. Begin Phase 3: Organization Management
+2. Build organization-scoped queries (listGenerators, listHaulers, etc.)
+3. Create organization management UI on treater app
 
 ### Context for Next Claude
 
 **What you're building:** Multi-tenant auth infrastructure for hospital waste management platform. Treaters create and manage generators (hospitals) and haulers (trucking partners) with role-based access control.
 
-**Where we are:** Phase 1 complete (Core Authentication). Phase 2 in progress - just completed 02-01 (Schema Bridge Fields). Schema now has parentBetterAuthOrgId for hierarchy tracking and betterAuthUserId for Better Auth linking.
+**Where we are:** Phase 1 (Core Authentication) and Phase 2 (Organization Bridge) complete. Auth flows work, organization creation mutations ready. Ready for Phase 3 (Organization Management).
 
 **What's special:** Using Better Auth organization plugin with bridge table pattern (organizationLinks) to map Better Auth's generic orgs to domain entities (treaters/generators/haulers). All queries must be organization-scoped for tenant isolation.
 
-**Key files:**
-- Phase 1 (Auth): `apps/treater/src/lib/auth-server.ts`, `apps/treater/src/routes/api/auth/$.ts`, `apps/treater/src/contexts/auth-context.tsx`
-- Phase 2 (Org Bridge): `packages/convex/convex/schema/organizationLinks.ts`, `packages/convex/convex/schema/users.ts`
+**Key files (Phase 2):**
+- `packages/convex/convex/schema/organizationLinks.ts` - Bridge table with hierarchy tracking
+- `packages/convex/convex/organizations/helpers.ts` - Resolution utilities
+- `packages/convex/convex/organizations/mutations.ts` - Atomic creation mutations
 
-**Key constraint:** Better Auth 1.4.10 + Convex adapter 0.10.9 already installed. Schema changes must be backward-compatible (optional fields).
+**Key constraint:** Better Auth 1.4.10 + Convex adapter 0.10.9. Schema changes are backward-compatible (optional fields).
 
 ---
 
 **State initialized:** 2026-01-21 after roadmap creation
-**Last update:** 2026-01-21 after 02-01-PLAN.md execution (Schema Bridge Fields)
+**Last update:** 2026-01-21 after Phase 2 completion
