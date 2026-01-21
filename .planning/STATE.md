@@ -20,16 +20,16 @@
 ## Current Position
 
 **Phase:** Phase 3 - Organization Management (3 of 6) - IN PROGRESS
-**Plan:** 2/4 plans complete (03-01, 03-02)
-**Status:** Dashboard shows real generators with organization scoping
-**Last activity:** 2026-01-21 - Completed 03-02-PLAN.md (Generator Dashboard UI)
+**Plan:** 4/4 plans complete (03-01, 03-02, 03-03, 03-04)
+**Status:** Organization management UI complete with detail pages
+**Last activity:** 2026-01-21 - Completed 03-04-PLAN.md (Organization Detail Pages)
 
 ```
-Progress: [█████████░░░░░░░░░░░] ~30%
+Progress: [██████████░░░░░░░░░░] ~35%
 
 Phase 1: Core Authentication        [██████████] 5/5 plans complete ✓
 Phase 2: Organization Bridge        [██████████] 3/3 plans complete ✓
-Phase 3: Organization Management    [█████░░░░░] 2/4 plans complete
+Phase 3: Organization Management    [██████████] 4/4 plans complete ✓
 Phase 4: Team Management            [░░░░░░░░░░] 0/? plans
 Phase 5: Role-Based Access Control  [░░░░░░░░░░] 0/? plans
 Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
@@ -41,9 +41,9 @@ Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 
 | Metric | Value | Target | Status |
 |--------|-------|--------|--------|
-| Plans Completed | 10 total (5 Phase 1, 3 Phase 2, 2 Phase 3) | - | On Track |
-| Phases Completed | 2/6 (Phase 3 in progress) | 6/6 | In Progress |
-| Requirements Complete | 9/29 | 29/29 | On Track |
+| Plans Completed | 12 total (5 Phase 1, 3 Phase 2, 4 Phase 3) | - | On Track |
+| Phases Completed | 3/6 (Phase 3 complete) | 6/6 | On Track |
+| Requirements Complete | 11/29 | 29/29 | On Track |
 | Coverage | 100% | 100% | On Track |
 
 ---
@@ -80,6 +80,10 @@ Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 | 2026-01-21 | useActiveTreater pattern for tenant context in React components | Combines Better Auth active org with Convex organizationLinks resolution | All dashboard components use useActiveTreater to get treaterId |
 | 2026-01-21 | Stub computed fields until wasteBags queries available | Storage utilization, pending/treated counts require aggregating wasteBags data | Display placeholder values (0) in UI, calculate in future phase |
 | 2026-01-21 | Client-side filtering for active/inactive generators | Small dataset, simpler query logic, instant filter changes | Fetch all generators (includeInactive: true) and filter in component |
+| 2026-01-21 | Index routes redirect to dashboard | Generator and hauler lists are on main dashboard | Clean URL structure, no duplicate list pages |
+| 2026-01-21 | Detail pages query organization links separately | Can use specific api.organizationLinks.index.getByGenerator/getByHauler | Shows Better Auth organization ID for debugging |
+| 2026-01-21 | Display serviceArea instead of fleetSize for haulers | fleetSize doesn't exist in schema, serviceArea does | UI matches actual data model |
+| 2026-01-21 | Conditional location cards in detail pages | Location data is optional in schema | UI degrades gracefully when location not provided |
 
 ### Architecture Patterns Established
 
@@ -209,58 +213,68 @@ beforeLoad: async ({ context }) => {
 ### Last Session Summary
 
 **Date:** 2026-01-21
-**Activity:** Executed Phase 3 Plan 02 (Generator Dashboard UI)
-**Outcome:** Created useActiveTreater hook and refactored GeneratorsOverview to use real Convex data
+**Activity:** Executed Phase 3 Plan 04 (Organization Detail Pages)
+**Outcome:** Created detail pages for generators and haulers with navigation from dashboard cards
 
 **Commits:**
-- `0ad73b8` - feat(03-02): create useActiveTreater hook
-- `a54c263` - feat(03-02): refactor GeneratorsOverview to use real Convex data
+- `6e96409` - feat(03-04): create generator detail page route
+- `8f047e6` - feat(03-04): create hauler detail page route
+- `678f53c` - feat(03-04): wire card clicks to detail pages
 
 **Files Created:**
-- `apps/treater/src/hooks/use-active-treater.ts` - Hook to resolve treaterId from Better Auth active org
+- `apps/treater/src/routes/dashboard/generators/index.tsx` - Redirect route (list is on dashboard)
+- `apps/treater/src/routes/dashboard/generators/$generatorId.tsx` - Generator detail page
+- `apps/treater/src/routes/dashboard/haulers/index.tsx` - Redirect route (list is on dashboard)
+- `apps/treater/src/routes/dashboard/haulers/$haulerId.tsx` - Hauler detail page
 
 **Files Modified:**
-- `apps/treater/src/components/dashboard/generators-overview.tsx` - Refactored to fetch real data from Convex
+- `apps/treater/src/components/dashboard/generators-overview.tsx` - Added navigation on card click
+- `apps/treater/src/components/dashboard/haulers-overview.tsx` - Added navigation on card click
 
 **Key Outcomes:**
-- useActiveTreater hook resolves Better Auth organization to Convex treaterId
-- GeneratorsOverview fetches real generator data via api.generators.index.getByTreater
-- Loading skeleton and error states implemented
-- Generator cards render with real Convex data (name, address, contact, qrMode, capacity, status)
-- Established pattern for organization-scoped dashboard components
+- Generator detail pages show organization info, contact, storage config, location
+- Hauler detail pages show organization info (license, service area), contact, headquarters location
+- Navigation from dashboard cards to detail pages works seamlessly
+- Authorization enforced at detail page level (treaterId for generators, partnership for haulers)
+- Phase 3 Organization Management complete (ORG-05, ORG-06 requirements satisfied)
 
 **Deviations:**
-- None - plan executed exactly as written
+- Auto-fixed hauler detail to use serviceArea instead of fleetSize (schema mismatch)
+- Added location card to hauler detail for consistency with generators
 
 ### Next Session Goals
 
-1. Continue Phase 3: Organization Management
-2. Execute 03-03-PLAN.md (Hauler Dashboard Overview)
-3. Execute 03-04-PLAN.md (Organization Switcher)
-4. Complete Phase 3 with all organization management features
+1. Begin Phase 4: Team Management
+2. Design user invitation flow for organizations
+3. Implement team member management UI
+4. Add role assignment capabilities
 
 ### Context for Next Claude
 
 **What you're building:** Multi-tenant auth infrastructure for hospital waste management platform. Treaters create and manage generators (hospitals) and haulers (trucking partners) with role-based access control.
 
-**Where we are:** Phase 1 and 2 complete. Phase 3 has 2/4 plans complete (03-01, 03-02). Dashboard now shows generators with real Convex data.
+**Where we are:** Phases 1, 2, and 3 complete. Organization management UI fully functional with list views and detail pages.
 
-**What's special:** Using Better Auth organization plugin with bridge table pattern (organizationLinks) to map Better Auth's generic orgs to domain entities. All queries require authentication and enforce tenant isolation. Dashboard components use useActiveTreater hook to get tenant context.
+**What's special:** Using Better Auth organization plugin with bridge table pattern (organizationLinks) to map Better Auth's generic orgs to domain entities. All queries require authentication and enforce tenant isolation. Detail pages use parameterized routes with authorization checks.
 
-**Key files (Phase 3 so far):**
+**Key files (Phase 3 complete):**
 - `packages/convex/convex/generators/queries.ts` - Authenticated generator queries with treaterId verification
 - `packages/convex/convex/haulers/queries.ts` - Authenticated hauler queries with partnership verification
 - `apps/treater/src/hooks/use-active-treater.ts` - Resolves treaterId from Better Auth active organization
-- `apps/treater/src/components/dashboard/generators-overview.tsx` - Generator list component with real Convex data
+- `apps/treater/src/components/dashboard/generators-overview.tsx` - Generator list with navigation
+- `apps/treater/src/components/dashboard/haulers-overview.tsx` - Hauler list with navigation
+- `apps/treater/src/routes/dashboard/generators/$generatorId.tsx` - Generator detail page
+- `apps/treater/src/routes/dashboard/haulers/$haulerId.tsx` - Hauler detail page
 
 **Key constraints:**
 - Better Auth 1.4.10 + Convex adapter 0.10.9
 - Import Convex API from @hwm/convex root (barrel export)
 - Access queries via api.generators.index.functionName notation
 - Use useActiveTreater for tenant context in components
+- TanStack Router file-based routing with parameterized detail pages
 - Computed fields (storage utilization, pending/treated counts) stubbed until wasteBags queries available
 
 ---
 
 **State initialized:** 2026-01-21 after roadmap creation
-**Last update:** 2026-01-21 after Phase 3 Plan 02 completion
+**Last update:** 2026-01-21 after Phase 3 Plan 04 completion
