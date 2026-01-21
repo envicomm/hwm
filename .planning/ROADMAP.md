@@ -76,6 +76,13 @@ Plans:
 - Organization type validation helpers
 - Organization link resolution utilities
 
+**Plans:** 3 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Schema updates (parentBetterAuthOrgId, betterAuthUserId)
+- [ ] 02-02-PLAN.md — Organization resolution helpers
+- [ ] 02-03-PLAN.md — Atomic organization creation mutations
+
 ---
 
 ### Phase 3: Organization Management
@@ -216,7 +223,7 @@ Plans:
 | Phase | Status | Requirements | Completion |
 |-------|--------|--------------|------------|
 | Phase 1: Core Authentication | Complete | 5/29 | 100% |
-| Phase 2: Organization Bridge | Pending | 2/29 | 0% |
+| Phase 2: Organization Bridge | In Progress | 2/29 | 0% |
 | Phase 3: Organization Management | Pending | 4/29 | 0% |
 | Phase 4: Team Management | Pending | 7/29 | 0% |
 | Phase 5: Role-Based Access Control | Pending | 7/29 | 0% |
@@ -246,7 +253,7 @@ Based on research/SUMMARY.md analysis:
 
 | Phase | Research Needed | Priority | Status |
 |-------|-----------------|----------|--------|
-| Phase 2 | Organization hierarchy permission model (does Treater admin auto-view child org data?) | High | Pending |
+| Phase 2 | Organization hierarchy permission model (does Treater admin auto-view child org data?) | High | Complete |
 | Phase 5 | DENR Philippines audit logging requirements (what must be logged, retention) | Medium | Pending |
 | Phase 4 | Invitation workflow edge cases (email deliverability, phishing prevention) | Low | Pending |
 
@@ -270,4 +277,4 @@ Based on standard depth (3-5 plans per phase) and research recommendations:
 ---
 
 **Last updated:** 2026-01-21
-**Next step:** `/gsd:discuss-phase 2` to gather context for Organization Bridge
+**Next step:** `/gsd:execute-phase 2` to execute Organization Bridge plans
