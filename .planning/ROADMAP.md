@@ -45,8 +45,8 @@ Plans:
 - [x] 01-01-PLAN.md — TanStack Start auth proxy and server helpers
 - [x] 01-02-PLAN.md — SSR auth flow with ConvexBetterAuthProvider
 - [x] 01-03-PLAN.md — Auth UI redirect logic and route protection
-- [ ] 01-04-PLAN.md — Wire AuthProvider and update Header (gap closure)
-- [ ] 01-05-PLAN.md — Clean up dead code and fix type exports (gap closure)
+- [x] 01-04-PLAN.md — Wire AuthProvider and update Header (gap closure)
+- [x] 01-05-PLAN.md — Clean up dead code and fix type exports (gap closure)
 
 ---
 
@@ -215,13 +215,13 @@ Plans:
 
 | Phase | Status | Requirements | Completion |
 |-------|--------|--------------|------------|
-| Phase 1: Core Authentication | Gap Closure | 5/29 | 60% |
+| Phase 1: Core Authentication | Complete | 5/29 | 100% |
 | Phase 2: Organization Bridge | Pending | 2/29 | 0% |
 | Phase 3: Organization Management | Pending | 4/29 | 0% |
 | Phase 4: Team Management | Pending | 7/29 | 0% |
 | Phase 5: Role-Based Access Control | Pending | 7/29 | 0% |
 | Phase 6: Cross-App Authentication | Pending | 4/29 | 0% |
-| **Total** | **In Progress** | **29/29** | **~10%** |
+| **Total** | **In Progress** | **29/29** | **~17%** |
 
 ---
 
@@ -270,4 +270,4 @@ Based on standard depth (3-5 plans per phase) and research recommendations:
 ---
 
 **Last updated:** 2026-01-21
-**Next step:** `/gsd:execute-phase 1` to execute gap closure plans (01-04, 01-05)
+**Next step:** `/gsd:discuss-phase 2` to gather context for Organization Bridge
