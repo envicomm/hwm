@@ -39,6 +39,13 @@ This roadmap implements multi-tenant authentication infrastructure for HWM, enab
 - Password reset flow with secure token validation
 - organizationLinks table indexes validation
 
+**Plans:** 3 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — TanStack Start auth proxy and server helpers
+- [ ] 01-02-PLAN.md — SSR auth flow with ConvexBetterAuthProvider
+- [ ] 01-03-PLAN.md — Auth UI redirect logic and route protection
+
 ---
 
 ### Phase 2: Organization Bridge
@@ -206,7 +213,7 @@ This roadmap implements multi-tenant authentication infrastructure for HWM, enab
 
 | Phase | Status | Requirements | Completion |
 |-------|--------|--------------|------------|
-| Phase 1: Core Authentication | Pending | 5/29 | 0% |
+| Phase 1: Core Authentication | Planned | 5/29 | 0% |
 | Phase 2: Organization Bridge | Pending | 2/29 | 0% |
 | Phase 3: Organization Management | Pending | 4/29 | 0% |
 | Phase 4: Team Management | Pending | 7/29 | 0% |
@@ -261,4 +268,4 @@ Based on standard depth (3-5 plans per phase) and research recommendations:
 ---
 
 **Last updated:** 2026-01-21
-**Next step:** `/gsd:plan-phase 1` to decompose Core Authentication into executable plans
+**Next step:** `/gsd:execute-phase 1` to implement Core Authentication plans
