@@ -20,14 +20,14 @@
 ## Current Position
 
 **Phase:** Phase 1 - Core Authentication (1 of 6)
-**Plan:** 01-03 complete, awaiting human verification checkpoint (3 plans in phase)
-**Status:** Checkpoint - awaiting user verification
-**Last activity:** 2026-01-21 - Completed 01-03-PLAN.md (Auth Redirect Wiring)
+**Plan:** 01-05 complete (5 plans in phase, including gap closure)
+**Status:** Phase 1 complete - all plans executed
+**Last activity:** 2026-01-21 - Completed 01-05-PLAN.md (Gap Closure)
 
 ```
 Progress: [██████░░░░░░░░░░░░░░] ~10%
 
-Phase 1: Core Authentication        [████████░░] 3/3 plans (all tasks done, awaiting verification)
+Phase 1: Core Authentication        [██████████] 5/5 plans complete
 Phase 2: Organization Bridge        [░░░░░░░░░░] 0/? plans
 Phase 3: Organization Management    [░░░░░░░░░░] 0/? plans
 Phase 4: Team Management            [░░░░░░░░░░] 0/? plans
@@ -41,9 +41,9 @@ Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 
 | Metric | Value | Target | Status |
 |--------|-------|--------|--------|
-| Plans Completed | 3/3 (Phase 1) | 3/3 | Awaiting Verification |
+| Plans Completed | 5/5 (Phase 1) | 5/5 | Complete |
 | Phases Completed | 0/6 | 6/6 | In Progress |
-| Commits This Phase | 10 | - | On Track |
+| Commits This Phase | 12 | - | On Track |
 | Coverage | 100% | 100% | On Track |
 
 ---
@@ -149,11 +149,13 @@ beforeLoad: async ({ context }) => {
 
 ## TODO List
 
-### Immediate (Phase 1 Checkpoint)
+### Immediate (Phase 1 Complete)
 
 - [x] Complete 01-01-PLAN.md (Auth Proxy Route)
 - [x] Execute 01-02-PLAN.md (SSR Auth Integration)
 - [x] Execute 01-03-PLAN.md (Auth Redirect Wiring)
+- [x] Execute 01-04-PLAN.md (AuthProvider Integration)
+- [x] Execute 01-05-PLAN.md (Gap Closure - dead code cleanup)
 - [ ] **USER ACTION:** Configure Resend API key for email verification
 - [ ] **USER ACTION:** Verify full auth flow end-to-end
 
@@ -187,23 +189,21 @@ beforeLoad: async ({ context }) => {
 ### Last Session Summary
 
 **Date:** 2026-01-21
-**Activity:** Executed 01-03-PLAN.md (Auth Redirect Wiring)
-**Outcome:** Wired auth route redirects and protection, awaiting human verification
+**Activity:** Executed 01-05-PLAN.md (Gap Closure)
+**Outcome:** Cleaned up dead code and fixed type export issues
 
 **Commits:**
-- `3a9871a` - feat(01-03): add redirect logic to auth page
-- `93f6a02` - feat(01-03): protect dashboard route with auth check
-- `c74da63` - feat(01-03): update index route with auth-based redirect
+- `00074b2` - chore(01-05): delete dead login-page.tsx component
+- `161e199` - fix(01-05): add MockGenerator type alias for backward compatibility
 
 **Files Modified:**
-- apps/treater/src/routes/auth.$authView.tsx
-- apps/treater/src/routes/dashboard.tsx
-- apps/treater/src/routes/index.tsx
+- apps/treater/src/components/login-page.tsx (deleted)
+- apps/treater/src/lib/mock-data.ts (added type alias)
 
-**Key Patterns Established:**
-- Route protection: beforeLoad checks context.isAuthenticated
-- Parameterized redirect: { to: "/auth/$authView", params: { authView: "sign-in" } }
-- AuthView redirectTo prop for post-auth navigation
+**Key Outcomes:**
+- Eliminated dead login-page.tsx that used old auth API
+- Added MockGenerator type alias for generators-overview.tsx compatibility
+- No auth-related TypeScript errors remaining
 
 ### Next Session Goals
 
@@ -215,7 +215,7 @@ beforeLoad: async ({ context }) => {
 
 **What you're building:** Multi-tenant auth infrastructure for hospital waste management platform. Treaters create and manage generators (hospitals) and haulers (trucking partners) with role-based access control.
 
-**Where we are:** All 3 plans in Phase 1 executed. Auth proxy at `/api/auth/$`, SSR auth flow wired, route protection in place. Awaiting user verification of full auth flows.
+**Where we are:** All 5 plans in Phase 1 executed (including gap closure). Auth proxy at `/api/auth/$`, SSR auth flow wired, route protection in place, AuthProvider integrated, dead code cleaned up. Ready for user verification of full auth flows.
 
 **What's special:** Using Better Auth organization plugin with bridge table pattern (organizationLinks) to map Better Auth's generic orgs to domain entities (treaters/generators/haulers). All queries must be organization-scoped for tenant isolation.
 
@@ -232,4 +232,4 @@ beforeLoad: async ({ context }) => {
 ---
 
 **State initialized:** 2026-01-21 after roadmap creation
-**Last update:** 2026-01-21 after 01-03-PLAN.md execution (checkpoint pending)
+**Last update:** 2026-01-21 after 01-05-PLAN.md execution (Phase 1 complete)
