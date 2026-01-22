@@ -201,6 +201,16 @@ Plans:
 - Data scoping layer for all cross-org queries
 - Authorization middleware for server-side enforcement
 
+**Plans:** 6 plans
+
+Plans:
+- [ ] 05-01-PLAN.md — Audit log schema and permission definitions
+- [ ] 05-02-PLAN.md — User context resolution and custom function wrappers
+- [ ] 05-03-PLAN.md — Audit logging utility and integration
+- [ ] 05-04-PLAN.md — Data scoping layer for domain-based visibility
+- [ ] 05-05-PLAN.md — Refactor mutations with permission checks
+- [ ] 05-06-PLAN.md — Permission-aware UI components
+
 ---
 
 ### Phase 6: Cross-App Authentication
@@ -242,7 +252,7 @@ Plans:
 | Phase 2: Organization Bridge | Complete | 2/29 | 100% |
 | Phase 3: Organization Management | Complete | 4/29 | 100% |
 | Phase 4: Team Management | Complete | 7/29 | 100% |
-| Phase 5: Role-Based Access Control | Pending | 7/29 | 0% |
+| Phase 5: Role-Based Access Control | In Progress | 7/29 | 0% |
 | Phase 6: Cross-App Authentication | Pending | 4/29 | 0% |
 | **Total** | **In Progress** | **29/29** | **~62%** |
 
@@ -293,4 +303,4 @@ Based on standard depth (3-5 plans per phase) and research recommendations:
 ---
 
 **Last updated:** 2026-01-22
-**Next step:** `/gsd:plan-phase 5` to plan Role-Based Access Control
+**Next step:** `/gsd:execute-phase 5` to execute Role-Based Access Control
