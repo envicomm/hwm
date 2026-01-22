@@ -19,19 +19,19 @@
 
 ## Current Position
 
-**Phase:** Phase 5 - Role-Based Access Control (5 of 6)
-**Plan:** 5/6 plans complete
-**Status:** In progress
-**Last activity:** 2026-01-22 - Completed 05-05-PLAN.md (Protected Mutations)
+**Phase:** Phase 5 - Role-Based Access Control (5 of 6) COMPLETE
+**Plan:** 6/6 plans complete
+**Status:** Phase Complete
+**Last activity:** 2026-01-22 - Completed 05-06-PLAN.md (Permission UI Integration)
 
 ```
-Progress: [█████████████████████░] ~85%
+Progress: [██████████████████████] ~90%
 
 Phase 1: Core Authentication        [██████████] 5/5 plans complete
 Phase 2: Organization Bridge        [██████████] 3/3 plans complete
 Phase 3: Organization Management    [██████████] 4/4 plans complete
 Phase 4: Team Management            [██████████] 4/4 plans complete
-Phase 5: Role-Based Access Control  [█████████░] 5/6 plans complete
+Phase 5: Role-Based Access Control  [██████████] 6/6 plans complete
 Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 ```
 
@@ -41,8 +41,8 @@ Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 
 | Metric | Value | Target | Status |
 |--------|-------|--------|--------|
-| Plans Completed | 21 total (5 Phase 1, 3 Phase 2, 4 Phase 3, 4 Phase 4, 5 Phase 5) | - | On Track |
-| Phases Completed | 4/6 (Phase 5 in progress) | 6/6 | On Track |
+| Plans Completed | 22 total (5 Phase 1, 3 Phase 2, 4 Phase 3, 4 Phase 4, 6 Phase 5) | - | On Track |
+| Phases Completed | 5/6 (Phase 5 complete) | 6/6 | On Track |
 | Requirements Complete | 13/29 | 29/29 | On Track |
 | Coverage | 100% | 100% | On Track |
 
@@ -103,6 +103,9 @@ Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 | 2026-01-22 | treaterId inferred from UserContext in mutations | Simplifies API, enforces only authenticated treaters can create generators/haulers | BREAKING: treaterId removed from create args |
 | 2026-01-22 | Partnership-specific audit events added | Audit completeness - partnership ops distinct from CRUD | New events: partnership_created/reactivated/removed |
 | 2026-01-22 | Permission check ordering: access first, then permission | Ensures domain boundary checked before role check | All protected mutations follow this pattern |
+| 2026-01-22 | Mirror PERMISSIONS matrix in client-side hooks | UI and backend have consistent permission rules | usePermissions hook in all apps |
+| 2026-01-22 | Use authClient.useActiveMember for org role | Better Auth provides accurate role from active organization | All permission checks use this hook |
+| 2026-01-22 | PermissionGate returns null while loading | Prevents flash of forbidden content during initial load | Consistent UX across permission checks |
 
 ### Architecture Patterns Established
 
@@ -248,14 +251,14 @@ beforeLoad: async ({ context }) => {
 - [ ] **USER ACTION:** Verify full auth flow end-to-end
 - [ ] **USER ACTION:** Set GENERATOR_APP_URL and TRUCKING_APP_URL for production
 
-### Phase 5 In Progress
+### Phase 5 Complete
 
 - [x] Complete 05-01-PLAN.md (RBAC Foundation)
 - [x] Complete 05-02-PLAN.md (User Context and Custom Functions)
 - [x] Complete 05-03-PLAN.md (Audit Log Mutations)
 - [x] Complete 05-04-PLAN.md (Data Scoping Utilities)
 - [x] Complete 05-05-PLAN.md (Protected Mutations)
-- [ ] Complete 05-06-PLAN.md (Permission UI Integration)
+- [x] Complete 05-06-PLAN.md (Permission UI Integration)
 
 ### Upcoming (Next Phases)
 
@@ -283,43 +286,54 @@ beforeLoad: async ({ context }) => {
 ### Last Session Summary
 
 **Date:** 2026-01-22
-**Activity:** Executed Phase 5 Plan 05 (Protected Mutations)
-**Outcome:** Generator and hauler mutations refactored with protectedMutation, permission checks, and audit logging
+**Activity:** Executed Phase 5 Plan 06 (Permission UI Integration)
+**Outcome:** Added usePermissions hook and PermissionGate component to all three apps with UI integrations
 
 **Commits:**
-- `a848390` - feat(05-05): refactor generator mutations with permission checks
-- `23ee62c` - feat(05-05): refactor hauler mutations with permission checks
+- `d539712` - feat(05-06): add permission gate component and hook for treater app
+- `db984b7` - feat(05-06): add permission gate component and hook for generator app
+- `9893885` - feat(05-06): add permission gate component and hook for trucking app
+- `21dd582` - feat(05-06): add permission gates to team member actions
+- `362fd6c` - feat(05-06): add permission gates to dashboard create actions
+
+**Files Created:**
+- `apps/treater/src/hooks/usePermissions.ts` - Permission hook for treater
+- `apps/treater/src/components/ui/permission-gate.tsx` - Gate component for treater
+- `apps/generator/src/hooks/usePermissions.ts` - Permission hook for generator
+- `apps/generator/src/components/ui/permission-gate.tsx` - Gate component for generator
+- `apps/trucking/src/hooks/usePermissions.ts` - Permission hook for trucking
+- `apps/trucking/src/components/ui/permission-gate.tsx` - Gate component for trucking
 
 **Files Modified:**
-- `packages/convex/convex/generators/mutations.ts` - 3 mutations refactored with protectedMutation + permissions + audit
-- `packages/convex/convex/haulers/mutations.ts` - 5 mutations refactored with protectedMutation + permissions + audit
-- `packages/convex/convex/lib/audit.ts` - Added partnership audit events
+- `apps/treater/src/components/team/member-actions.tsx` - Added permission checks
+- `apps/treater/src/components/dashboard/generators-overview.tsx` - Wrapped Add button
+- `apps/treater/src/components/dashboard/haulers-overview.tsx` - Added permission check
 
 **Key Outcomes:**
-- All generator mutations (create, update, remove) now use protectedMutation
-- All hauler mutations (create, update, remove, createPartnership, removePartnership) now use protectedMutation
-- Permission checks: owner/admin for create/update, owner only for delete
-- Domain access checks via requireGeneratorAccess/requireHaulerAccess
-- Audit logging for all sensitive operations
-- treaterId now inferred from user context (BREAKING: removed from create args)
+- usePermissions hook provides `can()` function and role helpers (isOwner, isAdmin, isMember)
+- PermissionGate component for declarative conditional rendering
+- Team member actions hidden from member role users
+- Dashboard create buttons only visible to owner/admin
+- All three apps have permission infrastructure ready
 
 **Deviations:**
-- Fixed schema mismatch in plan code (serviceArea type, partnership fields)
-- Added partnership-specific audit events (partnership_created/reactivated/removed)
+- None - plan executed exactly as written
 
 ### Next Session Goals
 
-1. Execute 05-06-PLAN.md (Permission UI Integration)
-2. Complete Phase 5 Role-Based Access Control
-3. Begin Phase 6 Cross-App Authentication planning
+1. Begin Phase 6 Cross-App Authentication planning
+2. Research Better Auth crossDomain plugin setup
+3. Test authentication flow across all three apps
 
 ### Context for Next Claude
 
 **What you're building:** Multi-tenant auth infrastructure for hospital waste management platform. Treaters create and manage generators (hospitals) and haulers (trucking partners) with role-based access control.
 
-**Where we are:** Phase 5 nearly complete. Plans 05-01 through 05-05 complete. Ready for 05-06 (Permission UI Integration).
+**Where we are:** Phase 5 (Role-Based Access Control) COMPLETE. Ready for Phase 6 (Cross-App Authentication).
 
-**What's special:** Using Better Auth organization plugin with bridge table pattern (organizationLinks) to map Better Auth's generic orgs to domain entities. PERMISSIONS matrix defines resource/action/role mappings for authorization. All generator/hauler mutations now use protectedMutation with permission checks and audit logging.
+**What's special:** Using Better Auth organization plugin with bridge table pattern (organizationLinks) to map Better Auth's generic orgs to domain entities. PERMISSIONS matrix defines resource/action/role mappings for authorization. Complete RBAC implementation with:
+- Server-side: protectedMutation with permission checks and audit logging
+- Client-side: usePermissions hook and PermissionGate component
 
 **Key files (Phase 5 complete):**
 - `packages/convex/convex/lib/permissions.ts` - PERMISSIONS matrix, hasPermission, requirePermission
@@ -329,12 +343,14 @@ beforeLoad: async ({ context }) => {
 - `packages/convex/convex/lib/dataScoping.ts` - getAccessibleGenerators, getAccessibleHaulers, canAccess*, require*Access
 - `packages/convex/convex/generators/mutations.ts` - Permission-protected generator mutations
 - `packages/convex/convex/haulers/mutations.ts` - Permission-protected hauler mutations
+- `apps/*/src/hooks/usePermissions.ts` - Client-side permission checking
+- `apps/*/src/components/ui/permission-gate.tsx` - Conditional rendering component
 
-**Key patterns (05-05):**
-- protectedMutation provides ctx.user (UserContext) and ctx.audit (AuditLogger)
-- Permission check ordering: access check first, then permission check
-- Org type guard at start of create mutations (treater-only)
-- Audit logging at end of successful mutation
+**Key patterns (05-06):**
+- usePermissions uses authClient.useActiveMember for org role
+- PermissionGate returns null while loading (prevents flash)
+- PERMISSIONS matrix is mirrored client-side for consistency
+- can(resource, action) function for type-safe permission checks
 
 **Key constraints:**
 - Better Auth 1.4.10 + Convex adapter 0.10.9
@@ -345,4 +361,4 @@ beforeLoad: async ({ context }) => {
 ---
 
 **State initialized:** 2026-01-21 after roadmap creation
-**Last update:** 2026-01-22 after Phase 5 Plan 05 completion
+**Last update:** 2026-01-22 after Phase 5 completion
