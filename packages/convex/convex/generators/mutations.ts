@@ -1,14 +1,17 @@
-import { mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { qrMode } from "../schema/validators";
-import { requireTreaterAccess, requireGeneratorAccess } from "../lib/auth";
+import { protectedMutation } from "../lib/customFunctions";
+import { requirePermission } from "../lib/permissions";
+import { requireGeneratorAccess } from "../lib/dataScoping";
 
-// Create a new generator (Convex entity only)
-// The organization creation and invitations should be handled client-side
-// Only treaters can create generators under their organization
-export const create = mutation({
+/**
+ * Create a new generator
+ * Requires: treater org type + generator.create permission (owner/admin)
+ *
+ * BREAKING CHANGE: treaterId argument removed - now inferred from user context
+ */
+export const create = protectedMutation({
 	args: {
-		treaterId: v.id("treaters"),
 		name: v.string(),
 		address: v.string(),
 		contactEmail: v.string(),
@@ -26,13 +29,20 @@ export const create = mutation({
 		),
 	},
 	handler: async (ctx, args) => {
-		// Verify user has access to this treater organization
-		await requireTreaterAccess(ctx, args.treaterId);
+		const { user, audit } = ctx;
+
+		// Only treaters can create generators
+		if (user.orgType !== "treater" || !user.treaterId) {
+			throw new Error("Only treaters can create generators");
+		}
+
+		// Check permission (owner/admin can create)
+		requirePermission(user.orgRole, "generator", "create");
 
 		const now = Date.now();
 
 		const generatorId = await ctx.db.insert("generators", {
-			treaterId: args.treaterId,
+			treaterId: user.treaterId,
 			name: args.name,
 			address: args.address,
 			contactEmail: args.contactEmail,
@@ -48,13 +58,21 @@ export const create = mutation({
 			updatedAt: now,
 		});
 
+		// Audit log
+		await audit("generator.created", "generators", generatorId, {
+			name: args.name,
+			treaterId: user.treaterId,
+		});
+
 		return generatorId;
 	},
 });
 
-// Update a generator
-// Requires access to the generator (either as generator member or parent treater)
-export const update = mutation({
+/**
+ * Update a generator
+ * Requires: access to generator + generator.update permission (owner/admin)
+ */
+export const update = protectedMutation({
 	args: {
 		generatorId: v.id("generators"),
 		name: v.optional(v.string()),
@@ -75,8 +93,13 @@ export const update = mutation({
 		isActive: v.optional(v.boolean()),
 	},
 	handler: async (ctx, args) => {
-		// Verify user has access to this generator
-		await requireGeneratorAccess(ctx, args.generatorId);
+		const { user, audit } = ctx;
+
+		// Check access (treater owns it OR it's the user's generator)
+		await requireGeneratorAccess(ctx, user, args.generatorId);
+
+		// Check permission (owner/admin can update)
+		requirePermission(user.orgRole, "generator", "update");
 
 		const { generatorId, ...updates } = args;
 
@@ -85,23 +108,43 @@ export const update = mutation({
 			updatedAt: Date.now(),
 		});
 
+		// Audit log
+		await audit("generator.updated", "generators", generatorId, {
+			updatedFields: Object.keys(updates),
+		});
+
 		return generatorId;
 	},
 });
 
-// Soft delete a generator
-// Requires access to the generator (either as generator member or parent treater)
-export const remove = mutation({
+/**
+ * Soft delete a generator
+ * Requires: access to generator + generator.delete permission (owner only)
+ */
+export const remove = protectedMutation({
 	args: {
 		generatorId: v.id("generators"),
 	},
 	handler: async (ctx, args) => {
-		// Verify user has access to this generator
-		await requireGeneratorAccess(ctx, args.generatorId);
+		const { user, audit } = ctx;
+
+		// Check access
+		await requireGeneratorAccess(ctx, user, args.generatorId);
+
+		// Check permission (owner only can delete)
+		requirePermission(user.orgRole, "generator", "delete");
+
+		// Get generator name for audit log before soft delete
+		const generator = await ctx.db.get(args.generatorId);
 
 		await ctx.db.patch(args.generatorId, {
 			isActive: false,
 			updatedAt: Date.now(),
+		});
+
+		// Audit log
+		await audit("generator.deleted", "generators", args.generatorId, {
+			name: generator?.name,
 		});
 	},
 });
