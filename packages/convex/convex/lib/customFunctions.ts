@@ -9,6 +9,7 @@ import {
 	requireUserContext,
 	type UserContext,
 } from "./userContext";
+import { createAuditLogger, type AuditLogger } from "./audit";
 
 /**
  * Protected query - injects user context into handler
@@ -35,7 +36,7 @@ export const protectedQuery = customQuery(
 );
 
 /**
- * Protected mutation - injects user context into handler
+ * Protected mutation - injects user context and audit logger into handler
  * Throws UNAUTHORIZED if user is not authenticated
  *
  * Usage:
@@ -43,8 +44,11 @@ export const protectedQuery = customQuery(
  *   args: { ... },
  *   handler: async (ctx, args) => {
  *     // ctx.user is available with full UserContext
+ *     // ctx.audit is available for logging sensitive actions
  *     requirePermission(ctx.user.orgRole, "generator", "create");
- *     return ctx.db.insert("generators", ...);
+ *     const generatorId = await ctx.db.insert("generators", ...);
+ *     await ctx.audit("generator.created", "generators", generatorId);
+ *     return generatorId;
  *   },
  * });
  */
@@ -52,7 +56,8 @@ export const protectedMutation = customMutation(
 	mutation,
 	customCtx(async (ctx) => {
 		const user = await requireUserContext(ctx);
-		return { user };
+		const audit = createAuditLogger(ctx, user);
+		return { user, audit };
 	})
 );
 
@@ -105,4 +110,4 @@ export const optionalAuthMutation = customMutation(
 );
 
 // Re-export types for convenience
-export type { UserContext };
+export type { UserContext, AuditLogger };
