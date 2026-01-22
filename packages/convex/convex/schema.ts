@@ -25,6 +25,8 @@ import {
 	// Certificates
 	treatmentCertificates,
 	disposalCertificates,
+	// Audit logging
+	auditLogs,
 } from "./schema/index";
 
 export default defineSchema({
@@ -61,4 +63,7 @@ export default defineSchema({
 	// Certificates
 	treatmentCertificates,
 	disposalCertificates,
+
+	// Audit logging
+	auditLogs,
 });

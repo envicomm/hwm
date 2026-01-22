@@ -34,3 +34,6 @@ export { disposalBatches } from "./disposalBatches";
 // Certificates
 export { treatmentCertificates } from "./treatmentCertificates";
 export { disposalCertificates } from "./disposalCertificates";
+
+// Audit logging
+export { auditLogs } from "./auditLogs";
