@@ -19,6 +19,7 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { PermissionGate } from "@/components/ui/permission-gate";
 import { qrModeLabels } from "@/lib/mock-data";
 import { useActiveTreater } from "@/hooks/use-active-treater";
 
@@ -219,10 +220,12 @@ export function GeneratorsOverview({ onAddGenerator }: GeneratorsOverviewProps) 
             Hospitals and facilities you manage
           </p>
         </div>
-        <Button onClick={onAddGenerator} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Add Generator
-        </Button>
+        <PermissionGate resource="generator" action="create">
+          <Button onClick={onAddGenerator} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Generator
+          </Button>
+        </PermissionGate>
       </div>
 
       {/* Filters */}

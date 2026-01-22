@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { convexQuery } from "@convex-dev/react-query";
 import { api, type Doc } from "@hwm/convex";
 import { useActiveTreater } from "@/hooks/use-active-treater";
+import { usePermissions } from "@/hooks/usePermissions";
 import {
 	Truck,
 	MapPin,
@@ -106,8 +107,11 @@ interface HaulersOverviewProps {
 export function HaulersOverview({ onAddHauler }: HaulersOverviewProps) {
 	const navigate = useNavigate();
 	const { treaterId, isLoading: treaterLoading } = useActiveTreater();
+	const { can } = usePermissions();
 	const [searchQuery, setSearchQuery] = useState("");
 	const [filter, setFilter] = useState<"all" | "active" | "inactive">("all");
+
+	const canCreateHauler = can("hauler", "create");
 
 	const {
 		data: haulers,
@@ -161,7 +165,7 @@ export function HaulersOverview({ onAddHauler }: HaulersOverviewProps) {
 						Trucking partners that collect waste
 					</p>
 				</div>
-				{onAddHauler && (
+				{onAddHauler && canCreateHauler && (
 					<Button onClick={onAddHauler} className="gap-2">
 						<Plus className="h-4 w-4" />
 						Add Hauler
