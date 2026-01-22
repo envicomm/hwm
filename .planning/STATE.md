@@ -20,19 +20,19 @@
 ## Current Position
 
 **Phase:** Phase 6 - Cross-App Authentication (6 of 6) IN PROGRESS
-**Plan:** 2/4 plans complete
+**Plan:** 1/? plans complete
 **Status:** In Progress
-**Last activity:** 2026-01-22 - Completed 06-02-PLAN.md (Cross-App Sign-In Verification)
+**Last activity:** 2026-01-22 - Completed 06-01-PLAN.md (Organization-Type Routing)
 
 ```
-Progress: [███████████████████████] ~92%
+Progress: [███████████████████████] ~93%
 
 Phase 1: Core Authentication        [██████████] 5/5 plans complete
 Phase 2: Organization Bridge        [██████████] 3/3 plans complete
 Phase 3: Organization Management    [██████████] 4/4 plans complete
 Phase 4: Team Management            [██████████] 4/4 plans complete
 Phase 5: Role-Based Access Control  [██████████] 6/6 plans complete
-Phase 6: Cross-App Authentication   [█████░░░░░] 2/4 plans complete
+Phase 6: Cross-App Authentication   [██░░░░░░░░] 1/? plans complete
 ```
 
 ---
@@ -41,7 +41,7 @@ Phase 6: Cross-App Authentication   [█████░░░░░] 2/4 plans c
 
 | Metric | Value | Target | Status |
 |--------|-------|--------|--------|
-| Plans Completed | 24 total (5 Phase 1, 3 Phase 2, 4 Phase 3, 4 Phase 4, 6 Phase 5, 2 Phase 6) | - | On Track |
+| Plans Completed | 23 total (5 Phase 1, 3 Phase 2, 4 Phase 3, 4 Phase 4, 6 Phase 5, 1 Phase 6) | - | On Track |
 | Phases Completed | 5/6 (Phase 6 in progress) | 6/6 | On Track |
 | Requirements Complete | 27/29 | 29/29 | On Track |
 | Coverage | 100% | 100% | On Track |
@@ -106,6 +106,9 @@ Phase 6: Cross-App Authentication   [█████░░░░░] 2/4 plans c
 | 2026-01-22 | Mirror PERMISSIONS matrix in client-side hooks | UI and backend have consistent permission rules | usePermissions hook in all apps |
 | 2026-01-22 | Use authClient.useActiveMember for org role | Better Auth provides accurate role from active organization | All permission checks use this hook |
 | 2026-01-22 | PermissionGate returns null while loading | Prevents flash of forbidden content during initial load | Consistent UX across permission checks |
+| 2026-01-22 | Use getCurrentAppOrgTypeSSR with port parameter for SSR contexts | window.location not available in server-side beforeLoad, need explicit port | Each app hardcodes its port (3001/3002/3003) in beforeLoad |
+| 2026-01-22 | Type cast session.data.user to access activeOrganization | Better Auth organization plugin types not fully exported to session type | Used (session?.data?.user as any)?.activeOrganization with type safety on metadata |
+| 2026-01-22 | Exempt /auth, /accept-invitation, /api/auth from org-type routing | These paths must work regardless of active organization for login and invitation flows | isRoutingExemptPath checks pathname before running org-type redirect logic |
 
 ### Architecture Patterns Established
 
@@ -286,66 +289,61 @@ beforeLoad: async ({ context }) => {
 ### Last Session Summary
 
 **Date:** 2026-01-22
-**Activity:** Executed Phase 6 Plan 02 (Cross-App Sign-In Verification)
-**Outcome:** Verified auth routes and Better Auth crossDomain configuration for session sharing
+**Activity:** Executed Phase 6 Plan 01 (Organization-Type Routing)
+**Outcome:** Added automatic app routing middleware to redirect users to correct app based on active organization type
 
 **Commits:**
-- `bfb468b` - docs(06-02): verify generator auth routes match treater pattern
-- `9827f58` - docs(06-02): verify trucking auth routes match treater pattern
-- `d821d3c` - docs(06-02): verify cross-app session configuration
+- `bfb468b` - feat(06-01): add SSR-safe organization type detection helpers (pre-existing from research)
+- `7c4c62b` - feat(06-01): add organization-type routing to all three apps
 
-**Files Verified:**
-- `apps/generator/src/routes/auth.$authView.tsx` - Sign-in page correct
-- `apps/generator/src/routes/index.tsx` - Auth guards correct
-- `apps/trucking/src/routes/auth.$authView.tsx` - Sign-in page correct
-- `apps/trucking/src/routes/index.tsx` - Auth guards correct
+**Files Created:**
+- None - all functions added to existing files
+
+**Files Modified:**
+- `packages/auth/src/routing.ts` - Added getCurrentAppOrgTypeSSR and isRoutingExemptPath
+- `packages/auth/src/index.ts` - Exported new routing helpers
+- `apps/treater/src/routes/__root.tsx` - Added org-type routing in beforeLoad (port 3002)
+- `apps/generator/src/routes/__root.tsx` - Added org-type routing in beforeLoad (port 3001)
+- `apps/trucking/src/routes/__root.tsx` - Added org-type routing in beforeLoad (port 3003)
 
 **Key Outcomes:**
-- All auth routes match treater pattern from Phase 4 (04-01)
-- Better Auth crossDomain plugin enabled with all three localhost ports
-- Session cookie (`better-auth.session_token`) configured for sharing
-- Documented manual testing steps for end-to-end verification
-
-**Configuration Status:**
-- trustedOrigins: localhost:3001, 3002, 3003 configured
-- crossDomain plugin: ENABLED
-- AuthView pattern: Consistent across all apps
+- Users automatically redirected to correct app based on active organization type
+- SSR-safe org type detection using port parameter
+- Auth and invitation paths exempt from redirect logic
+- Type casting used to access Better Auth activeOrganization (incomplete types)
 
 **Deviations:**
-- None - plan executed exactly as written (verification-only)
+- None - plan executed exactly as written (Task 1 pre-existing from research phase)
 
 ### Next Session Goals
 
-1. Execute Phase 6 Plan 03 (Organization Switching - if it exists)
-2. Execute Phase 6 Plan 04 (Cross-App RBAC Verification - if it exists)
-3. Complete Phase 6 and move to next milestone
+1. Continue Phase 6 with next plan (if exists)
+2. Test organization-type routing with actual multi-app flow
+3. Consider multi-org user UX (org switcher UI) for future work
 
 ### Context for Next Claude
 
 **What you're building:** Multi-tenant auth infrastructure for hospital waste management platform. Treaters create and manage generators (hospitals) and haulers (trucking partners) with role-based access control.
 
-**Where we are:** Phase 6 (Cross-App Authentication) IN PROGRESS. 2/4 plans complete (Research + Sign-In Verification done).
+**Where we are:** Phase 6 (Cross-App Authentication) IN PROGRESS. 1/? plans complete (Organization-Type Routing done).
 
 **What's special:** Using Better Auth organization plugin with bridge table pattern (organizationLinks) to map Better Auth's generic orgs to domain entities. PERMISSIONS matrix defines resource/action/role mappings for authorization. Complete RBAC implementation with:
 - Server-side: protectedMutation with permission checks and audit logging
 - Client-side: usePermissions hook and PermissionGate component
 
-**Key files (Phase 5 complete):**
+**Key files (Phase 6 in progress):**
+- `packages/auth/src/routing.ts` - App routing helpers (getCurrentAppOrgTypeSSR, shouldRedirectToApp, isRoutingExemptPath)
+- `apps/*/src/routes/__root.tsx` - Organization-type routing middleware in beforeLoad
 - `packages/convex/convex/lib/permissions.ts` - PERMISSIONS matrix, hasPermission, requirePermission
 - `packages/convex/convex/lib/userContext.ts` - UserContext type, resolveUserContext, requireUserContext
 - `packages/convex/convex/lib/customFunctions.ts` - protectedQuery, protectedMutation wrappers with audit logging
-- `packages/convex/convex/lib/audit.ts` - AuditEvent types (including partnership events) and createAuditLogger
-- `packages/convex/convex/lib/dataScoping.ts` - getAccessibleGenerators, getAccessibleHaulers, canAccess*, require*Access
-- `packages/convex/convex/generators/mutations.ts` - Permission-protected generator mutations
-- `packages/convex/convex/haulers/mutations.ts` - Permission-protected hauler mutations
 - `apps/*/src/hooks/usePermissions.ts` - Client-side permission checking
 - `apps/*/src/components/ui/permission-gate.tsx` - Conditional rendering component
 
-**Key patterns (05-06):**
-- usePermissions uses authClient.useActiveMember for org role
-- PermissionGate returns null while loading (prevents flash)
-- PERMISSIONS matrix is mirrored client-side for consistency
-- can(resource, action) function for type-safe permission checks
+**Key patterns (06-01):**
+- Organization-type routing in beforeLoad: check session, get org metadata, redirect if mismatch
+- Port-based app detection for SSR: 3001=generator, 3002=treater, 3003=trucking
+- Exempt paths for auth flows: /auth, /accept-invitation, /api/auth
 
 **Key constraints:**
 - Better Auth 1.4.10 + Convex adapter 0.10.9
@@ -356,4 +354,4 @@ beforeLoad: async ({ context }) => {
 ---
 
 **State initialized:** 2026-01-21 after roadmap creation
-**Last update:** 2026-01-22 after Phase 6 Plan 2 completion
+**Last update:** 2026-01-22 after Phase 6 Plan 1 completion
