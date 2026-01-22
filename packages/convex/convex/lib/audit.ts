@@ -18,6 +18,9 @@ export type AuditEvent =
 	| "hauler.created"
 	| "hauler.updated"
 	| "hauler.deleted"
+	| "hauler.partnership_created"
+	| "hauler.partnership_reactivated"
+	| "hauler.partnership_removed"
 	// Waste bag events
 	| "wasteBag.created"
 	| "wasteBag.status_changed"

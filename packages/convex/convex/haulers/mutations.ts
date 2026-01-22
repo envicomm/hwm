@@ -1,15 +1,13 @@
-import { mutation } from "../_generated/server";
 import { v } from "convex/values";
-import {
-	requireAuth,
-	requireHaulerAccess,
-	requireTreaterAccess,
-} from "../lib/auth";
+import { protectedMutation } from "../lib/customFunctions";
+import { requirePermission } from "../lib/permissions";
+import { requireHaulerAccess } from "../lib/dataScoping";
 
-// Create a new hauler (Convex entity only)
-// The organization creation and invitations should be handled client-side
-// Requires authentication (hauler creation typically done during onboarding)
-export const create = mutation({
+/**
+ * Create a new hauler (and partnership with treater)
+ * Requires: treater org type + hauler.create permission (owner/admin)
+ */
+export const create = protectedMutation({
 	args: {
 		name: v.string(),
 		address: v.string(),
@@ -29,11 +27,19 @@ export const create = mutation({
 		),
 	},
 	handler: async (ctx, args) => {
-		// Require authentication for hauler creation
-		await requireAuth(ctx);
+		const { user, audit } = ctx;
+
+		// Only treaters can create haulers
+		if (user.orgType !== "treater" || !user.treaterId) {
+			throw new Error("Only treaters can create haulers");
+		}
+
+		// Check permission (owner/admin can create)
+		requirePermission(user.orgRole, "hauler", "create");
 
 		const now = Date.now();
 
+		// Create hauler
 		const haulerId = await ctx.db.insert("haulers", {
 			name: args.name,
 			address: args.address,
@@ -47,27 +53,50 @@ export const create = mutation({
 			updatedAt: now,
 		});
 
+		// Create treater-hauler partnership atomically
+		await ctx.db.insert("treaterHaulerPartners", {
+			treaterId: user.treaterId,
+			haulerId: haulerId,
+			isActive: true,
+			createdAt: now,
+		});
+
+		// Audit log
+		await audit("hauler.created", "haulers", haulerId, {
+			name: args.name,
+			treaterId: user.treaterId,
+		});
+
 		return haulerId;
 	},
 });
 
-// Create a treater-hauler partnership
-// Only treaters can create partnerships with haulers
-export const createPartnership = mutation({
+/**
+ * Create a treater-hauler partnership
+ * Only treaters can create partnerships with haulers
+ * Requires: hauler.create permission (owner/admin)
+ */
+export const createPartnership = protectedMutation({
 	args: {
-		treaterId: v.id("treaters"),
 		haulerId: v.id("haulers"),
 	},
 	handler: async (ctx, args) => {
-		// Verify user has access to this treater organization
-		await requireTreaterAccess(ctx, args.treaterId);
+		const { user, audit } = ctx;
+
+		// Only treaters can create partnerships
+		if (user.orgType !== "treater" || !user.treaterId) {
+			throw new Error("Only treaters can create hauler partnerships");
+		}
+
+		// Check permission (owner/admin can create partnerships)
+		requirePermission(user.orgRole, "hauler", "create");
 
 		const now = Date.now();
 
 		// Check if partnership already exists
 		const existing = await ctx.db
 			.query("treaterHaulerPartners")
-			.withIndex("by_treater", (q) => q.eq("treaterId", args.treaterId))
+			.withIndex("by_treater", (q) => q.eq("treaterId", user.treaterId!))
 			.collect();
 
 		const existingPartnership = existing.find(
@@ -78,25 +107,49 @@ export const createPartnership = mutation({
 			// Reactivate if inactive
 			if (!existingPartnership.isActive) {
 				await ctx.db.patch(existingPartnership._id, { isActive: true });
+
+				// Audit log for reactivation
+				await audit(
+					"hauler.partnership_reactivated",
+					"treaterHaulerPartners",
+					existingPartnership._id,
+					{
+						haulerId: args.haulerId,
+						treaterId: user.treaterId,
+					}
+				);
 			}
 			return existingPartnership._id;
 		}
 
 		// Create new partnership
 		const partnershipId = await ctx.db.insert("treaterHaulerPartners", {
-			treaterId: args.treaterId,
+			treaterId: user.treaterId,
 			haulerId: args.haulerId,
 			isActive: true,
 			createdAt: now,
 		});
 
+		// Audit log
+		await audit(
+			"hauler.partnership_created",
+			"treaterHaulerPartners",
+			partnershipId,
+			{
+				haulerId: args.haulerId,
+				treaterId: user.treaterId,
+			}
+		);
+
 		return partnershipId;
 	},
 });
 
-// Update a hauler
-// Only members of the hauler organization can update
-export const update = mutation({
+/**
+ * Update a hauler
+ * Requires: access to hauler + hauler.update permission (owner/admin)
+ */
+export const update = protectedMutation({
 	args: {
 		haulerId: v.id("haulers"),
 		name: v.optional(v.string()),
@@ -118,8 +171,13 @@ export const update = mutation({
 		isActive: v.optional(v.boolean()),
 	},
 	handler: async (ctx, args) => {
-		// Verify user has access to this hauler organization
-		await requireHaulerAccess(ctx, args.haulerId);
+		const { user, audit } = ctx;
+
+		// Check access (treater has partnership OR it's the user's hauler)
+		await requireHaulerAccess(ctx, user, args.haulerId);
+
+		// Check permission (owner/admin can update)
+		requirePermission(user.orgRole, "hauler", "update");
 
 		const { haulerId, ...updates } = args;
 
@@ -128,47 +186,102 @@ export const update = mutation({
 			updatedAt: Date.now(),
 		});
 
+		// Audit log
+		await audit("hauler.updated", "haulers", haulerId, {
+			updatedFields: Object.keys(updates),
+		});
+
 		return haulerId;
 	},
 });
 
-// Soft delete a hauler
-// Only members of the hauler organization can delete
-export const remove = mutation({
+/**
+ * Soft delete a hauler
+ * Requires: access to hauler + hauler.delete permission (owner only)
+ */
+export const remove = protectedMutation({
 	args: {
 		haulerId: v.id("haulers"),
 	},
 	handler: async (ctx, args) => {
-		// Verify user has access to this hauler organization
-		await requireHaulerAccess(ctx, args.haulerId);
+		const { user, audit } = ctx;
+
+		// Check access
+		await requireHaulerAccess(ctx, user, args.haulerId);
+
+		// Check permission (owner only can delete)
+		requirePermission(user.orgRole, "hauler", "delete");
+
+		// Get hauler name for audit log before soft delete
+		const hauler = await ctx.db.get(args.haulerId);
 
 		await ctx.db.patch(args.haulerId, {
 			isActive: false,
 			updatedAt: Date.now(),
 		});
+
+		// Also deactivate any partnerships if treater is deleting
+		if (user.orgType === "treater" && user.treaterId) {
+			const partnerships = await ctx.db
+				.query("treaterHaulerPartners")
+				.withIndex("by_treater", (q) => q.eq("treaterId", user.treaterId!))
+				.filter((q) => q.eq(q.field("haulerId"), args.haulerId))
+				.collect();
+
+			for (const partnership of partnerships) {
+				await ctx.db.patch(partnership._id, {
+					isActive: false,
+				});
+			}
+		}
+
+		// Audit log
+		await audit("hauler.deleted", "haulers", args.haulerId, {
+			name: hauler?.name,
+		});
 	},
 });
 
-// Remove treater-hauler partnership
-// Only treaters can remove partnerships
-export const removePartnership = mutation({
+/**
+ * Remove treater-hauler partnership
+ * Only treaters can remove partnerships
+ * Requires: hauler.delete permission (owner only)
+ */
+export const removePartnership = protectedMutation({
 	args: {
-		treaterId: v.id("treaters"),
 		haulerId: v.id("haulers"),
 	},
 	handler: async (ctx, args) => {
-		// Verify user has access to this treater organization
-		await requireTreaterAccess(ctx, args.treaterId);
+		const { user, audit } = ctx;
+
+		// Only treaters can remove partnerships
+		if (user.orgType !== "treater" || !user.treaterId) {
+			throw new Error("Only treaters can remove hauler partnerships");
+		}
+
+		// Check permission (owner only can remove partnerships)
+		requirePermission(user.orgRole, "hauler", "delete");
 
 		const partnerships = await ctx.db
 			.query("treaterHaulerPartners")
-			.withIndex("by_treater", (q) => q.eq("treaterId", args.treaterId))
+			.withIndex("by_treater", (q) => q.eq("treaterId", user.treaterId!))
 			.collect();
 
 		const partnership = partnerships.find((p) => p.haulerId === args.haulerId);
 
 		if (partnership) {
 			await ctx.db.patch(partnership._id, { isActive: false });
+
+			// Audit log
+			await audit(
+				"hauler.partnership_removed",
+				"treaterHaulerPartners",
+				partnership._id,
+				{
+					haulerId: args.haulerId,
+					treaterId: user.treaterId,
+				}
+			);
 		}
 	},
 });
