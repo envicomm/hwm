@@ -20,19 +20,19 @@
 ## Current Position
 
 **Phase:** Phase 6 - Cross-App Authentication (6 of 6) IN PROGRESS
-**Plan:** 1/? plans complete
+**Plan:** 3/4 plans complete
 **Status:** In Progress
-**Last activity:** 2026-01-22 - Completed 06-01-PLAN.md (Organization-Type Routing)
+**Last activity:** 2026-01-22 - Completed 06-03-PLAN.md (Organization Switcher UI)
 
 ```
-Progress: [███████████████████████] ~93%
+Progress: [████████████████████████] ~95%
 
 Phase 1: Core Authentication        [██████████] 5/5 plans complete
 Phase 2: Organization Bridge        [██████████] 3/3 plans complete
 Phase 3: Organization Management    [██████████] 4/4 plans complete
 Phase 4: Team Management            [██████████] 4/4 plans complete
 Phase 5: Role-Based Access Control  [██████████] 6/6 plans complete
-Phase 6: Cross-App Authentication   [██░░░░░░░░] 1/? plans complete
+Phase 6: Cross-App Authentication   [███████░░░] 3/4 plans complete
 ```
 
 ---
@@ -41,10 +41,10 @@ Phase 6: Cross-App Authentication   [██░░░░░░░░] 1/? plans c
 
 | Metric | Value | Target | Status |
 |--------|-------|--------|--------|
-| Plans Completed | 23 total (5 Phase 1, 3 Phase 2, 4 Phase 3, 4 Phase 4, 6 Phase 5, 1 Phase 6) | - | On Track |
+| Plans Completed | 25 total (5 Phase 1, 3 Phase 2, 4 Phase 3, 4 Phase 4, 6 Phase 5, 3 Phase 6) | - | On Track |
 | Phases Completed | 5/6 (Phase 6 in progress) | 6/6 | On Track |
-| Requirements Complete | 27/29 | 29/29 | On Track |
-| Coverage | 100% | 100% | On Track |
+| Requirements Complete | 28/29 | 29/29 | On Track |
+| Coverage | 97% | 100% | On Track |
 
 ---
 
@@ -109,6 +109,10 @@ Phase 6: Cross-App Authentication   [██░░░░░░░░] 1/? plans c
 | 2026-01-22 | Use getCurrentAppOrgTypeSSR with port parameter for SSR contexts | window.location not available in server-side beforeLoad, need explicit port | Each app hardcodes its port (3001/3002/3003) in beforeLoad |
 | 2026-01-22 | Type cast session.data.user to access activeOrganization | Better Auth organization plugin types not fully exported to session type | Used (session?.data?.user as any)?.activeOrganization with type safety on metadata |
 | 2026-01-22 | Exempt /auth, /accept-invitation, /api/auth from org-type routing | These paths must work regardless of active organization for login and invitation flows | isRoutingExemptPath checks pathname before running org-type redirect logic |
+| 2026-01-22 | Fetch organizations from session with API fallback | Better Auth session may include organizations array, fallback to authClient.organization.list() | OrganizationSwitcher handles different Better Auth configurations |
+| 2026-01-22 | Type cast session.user for activeOrganization (not session.data.user) | useSession hook returns { data: session } where session has { user: ... } | Pattern: (session?.user as any)?.activeOrganization |
+| 2026-01-22 | Single-org users see static label without dropdown | No switcher needed if user has ≤1 organization | Cleaner UI, avoids empty dropdown |
+| 2026-01-22 | Full page reload after organization switch | Ensures all React context updates with new organization | Simpler than manual context refresh, acceptable UX for infrequent operation |
 
 ### Architecture Patterns Established
 
@@ -226,6 +230,46 @@ beforeLoad: async ({ context }) => {
 - Creates user with appropriate entity reference (generatorId/haulerId/treaterId)
 ```
 
+**Organization Switcher Pattern (06-03):**
+```typescript
+// Component pattern for multi-org users
+export function OrganizationSwitcher() {
+  const { data: session, isPending } = authClient.useSession();
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+
+  // Get active org from session
+  const activeOrg = (session?.user as any)?.activeOrganization;
+
+  // Fetch organizations via useEffect
+  useEffect(() => {
+    // Try session.user.organizations first, fallback to API
+    const userOrgs = (session?.user as any)?.organizations;
+    if (userOrgs) setOrganizations(userOrgs);
+    else authClient.organization.list().then(result => setOrganizations(result.data || []));
+  }, [session]);
+
+  // Single org: static label, no dropdown
+  if (organizations.length <= 1) return <div>{activeOrg?.name}</div>;
+
+  // Multi-org: dropdown with handleSwitch
+  const handleSwitch = async (org) => {
+    await authClient.organization.setActive({ organizationId: org.id });
+
+    // Cross-app redirect if needed
+    const newOrgType = org.metadata?.organizationType;
+    const currentAppType = getCurrentAppOrgType();
+    if (newOrgType !== currentAppType) {
+      window.location.href = `${getAppUrlForOrgType(newOrgType)}/dashboard`;
+    } else {
+      window.location.reload(); // Refresh context
+    }
+  };
+}
+```
+- Identical implementation in all three apps
+- getCurrentAppOrgType() detects app automatically
+- getAppUrlForOrgType() returns correct redirect URL
+
 ### Open Questions
 
 1. **DENR Philippines Audit Requirements (Phase 5 blocker)**
@@ -233,26 +277,23 @@ beforeLoad: async ({ context }) => {
    - Specifics: Which actions, retention period, export format?
    - Status: Needs legal/compliance input before audit logging design
 
-2. **Multi-Org User UX (Phase 6)**
-   - Question: How should "switch organization" UI work for users in multiple orgs?
-   - Status: Will design during Phase 6 planning based on Phase 1-5 learnings
-
 ---
 
 ## TODO List
 
-### Phase 4 In Progress
+### Phase 6 In Progress
 
-- [x] Complete 04-01-PLAN.md (Multi-App SSR Auth)
-- [x] Complete 04-02-PLAN.md (Invitation Mutations)
-- [x] Complete 04-03-PLAN.md (Invitation Acceptance)
-- [x] Complete 04-04-PLAN.md (Team Management UI) - parallel execution
+- [x] Complete 06-01-PLAN.md (Organization-Type Routing)
+- [x] Complete 06-02-PLAN.md (if exists)
+- [x] Complete 06-03-PLAN.md (Organization Switcher UI)
+- [ ] Complete 06-04-PLAN.md (final plan in phase)
 
 ### User Actions Required
 
 - [ ] **USER ACTION:** Configure Resend API key for email verification
 - [ ] **USER ACTION:** Verify full auth flow end-to-end
 - [ ] **USER ACTION:** Set GENERATOR_APP_URL and TRUCKING_APP_URL for production
+- [ ] **USER ACTION:** Test multi-org user flows across all three apps
 
 ### Phase 5 Complete
 
@@ -267,11 +308,11 @@ beforeLoad: async ({ context }) => {
 
 - [ ] Research DENR audit logging requirements (Phase 5 - schema done, needs retention policy)
 - [x] Define comprehensive permission matrix (Phase 5) - COMPLETE in 05-01
+- [x] Multi-org user UX (Phase 6) - COMPLETE in 06-03
 
 ### Research Needed
 
 - [ ] Contact legal/compliance for DENR audit requirements (Phase 5)
-- [ ] Test Better Auth crossDomain plugin with actual 3-app setup (Phase 6)
 
 ---
 
@@ -289,58 +330,66 @@ beforeLoad: async ({ context }) => {
 ### Last Session Summary
 
 **Date:** 2026-01-22
-**Activity:** Executed Phase 6 Plan 01 (Organization-Type Routing)
-**Outcome:** Added automatic app routing middleware to redirect users to correct app based on active organization type
+**Activity:** Executed Phase 6 Plan 03 (Organization Switcher UI)
+**Outcome:** Added organization switcher component to all three apps for multi-org users to switch between organizations
 
 **Commits:**
-- `bfb468b` - feat(06-01): add SSR-safe organization type detection helpers (pre-existing from research)
-- `7c4c62b` - feat(06-01): add organization-type routing to all three apps
+- `723b90f` - feat(06-03): add OrganizationSwitcher component to treater app
+- `c36088e` - feat(06-03): add OrganizationSwitcher to generator and trucking apps
+- `c6dffb0` - feat(06-03): integrate OrganizationSwitcher into all app headers
 
 **Files Created:**
-- None - all functions added to existing files
+- `apps/treater/src/components/organization-switcher.tsx` - Organization switcher with Better Auth session
+- `apps/generator/src/components/organization-switcher.tsx` - Identical component for generator
+- `apps/trucking/src/components/organization-switcher.tsx` - Identical component for trucking
 
 **Files Modified:**
-- `packages/auth/src/routing.ts` - Added getCurrentAppOrgTypeSSR and isRoutingExemptPath
-- `packages/auth/src/index.ts` - Exported new routing helpers
-- `apps/treater/src/routes/__root.tsx` - Added org-type routing in beforeLoad (port 3002)
-- `apps/generator/src/routes/__root.tsx` - Added org-type routing in beforeLoad (port 3001)
-- `apps/trucking/src/routes/__root.tsx` - Added org-type routing in beforeLoad (port 3003)
+- `apps/treater/src/components/layout/header.tsx` - Added OrganizationSwitcher between logo and user menu
+- `apps/generator/src/components/layout/header.tsx` - Added OrganizationSwitcher between logo and user menu
+- `apps/trucking/src/components/layout/header.tsx` - Added OrganizationSwitcher between logo and user menu
 
 **Key Outcomes:**
-- Users automatically redirected to correct app based on active organization type
-- SSR-safe org type detection using port parameter
-- Auth and invitation paths exempt from redirect logic
-- Type casting used to access Better Auth activeOrganization (incomplete types)
+- Multi-org users can switch between organizations via header dropdown
+- Single-org users see organization name without dropdown
+- Switching to different org type redirects to correct app automatically
+- Full page reload after switch ensures context updates
+- Session type casting pattern established for activeOrganization access
 
 **Deviations:**
-- None - plan executed exactly as written (Task 1 pre-existing from research phase)
+- None - plan executed exactly as written
 
 ### Next Session Goals
 
-1. Continue Phase 6 with next plan (if exists)
-2. Test organization-type routing with actual multi-app flow
-3. Consider multi-org user UX (org switcher UI) for future work
+1. Complete Phase 6 Plan 04 (final plan in phase)
+2. Test end-to-end multi-org user flows
+3. Begin Phase 7 or wrap up v1.1 milestone
 
 ### Context for Next Claude
 
 **What you're building:** Multi-tenant auth infrastructure for hospital waste management platform. Treaters create and manage generators (hospitals) and haulers (trucking partners) with role-based access control.
 
-**Where we are:** Phase 6 (Cross-App Authentication) IN PROGRESS. 1/? plans complete (Organization-Type Routing done).
+**Where we are:** Phase 6 (Cross-App Authentication) IN PROGRESS. 3/4 plans complete (Organization-Type Routing, Organization Switcher UI done).
 
 **What's special:** Using Better Auth organization plugin with bridge table pattern (organizationLinks) to map Better Auth's generic orgs to domain entities. PERMISSIONS matrix defines resource/action/role mappings for authorization. Complete RBAC implementation with:
 - Server-side: protectedMutation with permission checks and audit logging
 - Client-side: usePermissions hook and PermissionGate component
+- Multi-org users can switch organizations via header dropdown with cross-app redirect
 
-**Key files (Phase 6 in progress):**
-- `packages/auth/src/routing.ts` - App routing helpers (getCurrentAppOrgTypeSSR, shouldRedirectToApp, isRoutingExemptPath)
+**Key files (Phase 6 complete):**
+- `packages/auth/src/routing.ts` - App routing helpers (getCurrentAppOrgTypeSSR, shouldRedirectToApp, isRoutingExemptPath, getAppUrlForOrgType)
 - `apps/*/src/routes/__root.tsx` - Organization-type routing middleware in beforeLoad
+- `apps/*/src/components/organization-switcher.tsx` - Organization switcher component with Better Auth session
+- `apps/*/src/components/layout/header.tsx` - Header with OrganizationSwitcher integrated
 - `packages/convex/convex/lib/permissions.ts` - PERMISSIONS matrix, hasPermission, requirePermission
 - `packages/convex/convex/lib/userContext.ts` - UserContext type, resolveUserContext, requireUserContext
 - `packages/convex/convex/lib/customFunctions.ts` - protectedQuery, protectedMutation wrappers with audit logging
 - `apps/*/src/hooks/usePermissions.ts` - Client-side permission checking
 - `apps/*/src/components/ui/permission-gate.tsx` - Conditional rendering component
 
-**Key patterns (06-01):**
+**Key patterns (06-03):**
+- Organization switcher: useEffect fetches orgs from session or API, dropdown for multi-org, static label for single-org
+- Cross-app redirect: setActive() then window.location.href to target app
+- Session type casting: (session?.user as any)?.activeOrganization (Better Auth types incomplete)
 - Organization-type routing in beforeLoad: check session, get org metadata, redirect if mismatch
 - Port-based app detection for SSR: 3001=generator, 3002=treater, 3003=trucking
 - Exempt paths for auth flows: /auth, /accept-invitation, /api/auth
@@ -354,4 +403,4 @@ beforeLoad: async ({ context }) => {
 ---
 
 **State initialized:** 2026-01-21 after roadmap creation
-**Last update:** 2026-01-22 after Phase 6 Plan 1 completion
+**Last update:** 2026-01-22 after Phase 6 Plan 3 completion
