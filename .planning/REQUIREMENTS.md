@@ -36,13 +36,13 @@ Requirements for Authentication + Organization Management milestone.
 
 ### Access Control
 
-- [ ] **RBAC-01**: Owner role has full access including billing
-- [ ] **RBAC-02**: Admin role can manage team and settings
-- [ ] **RBAC-03**: Member role can use features only
-- [ ] **RBAC-04**: Role-based UI shows appropriate features per role
-- [ ] **RBAC-05**: Treaters see own data + linked generators/haulers
-- [ ] **RBAC-06**: Generators see only their own org data
-- [ ] **RBAC-07**: Haulers see only their own org data
+- [x] **RBAC-01**: Owner role has full access including billing
+- [x] **RBAC-02**: Admin role can manage team and settings
+- [x] **RBAC-03**: Member role can use features only
+- [x] **RBAC-04**: Role-based UI shows appropriate features per role
+- [x] **RBAC-05**: Treaters see own data + linked generators/haulers
+- [x] **RBAC-06**: Generators see only their own org data
+- [x] **RBAC-07**: Haulers see only their own org data
 
 ### Cross-App Authentication
 
@@ -111,13 +111,13 @@ Populated during roadmap creation.
 | TEAM-03 | Phase 4 | Complete |
 | TEAM-04 | Phase 4 | Complete |
 | TEAM-05 | Phase 4 | Complete |
-| RBAC-01 | Phase 5 | Pending |
-| RBAC-02 | Phase 5 | Pending |
-| RBAC-03 | Phase 5 | Pending |
-| RBAC-04 | Phase 5 | Pending |
-| RBAC-05 | Phase 5 | Pending |
-| RBAC-06 | Phase 5 | Pending |
-| RBAC-07 | Phase 5 | Pending |
+| RBAC-01 | Phase 5 | Complete |
+| RBAC-02 | Phase 5 | Complete |
+| RBAC-03 | Phase 5 | Complete |
+| RBAC-04 | Phase 5 | Complete |
+| RBAC-05 | Phase 5 | Complete |
+| RBAC-06 | Phase 5 | Complete |
+| RBAC-07 | Phase 5 | Complete |
 | XAUTH-01 | Phase 6 | Pending |
 | XAUTH-02 | Phase 6 | Pending |
 | XAUTH-03 | Phase 6 | Pending |
@@ -130,4 +130,4 @@ Populated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-21*
-*Last updated: 2026-01-22 after Phase 4 completion*
+*Last updated: 2026-01-22 after Phase 5 completion*
