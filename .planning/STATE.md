@@ -20,18 +20,18 @@
 ## Current Position
 
 **Phase:** Phase 5 - Role-Based Access Control (5 of 6)
-**Plan:** 1/6 plans complete
+**Plan:** 2/6 plans complete
 **Status:** In progress
-**Last activity:** 2026-01-22 - Completed 05-01-PLAN.md (RBAC Foundation)
+**Last activity:** 2026-01-22 - Completed 05-02-PLAN.md (User Context and Custom Functions)
 
 ```
-Progress: [█████████████████░░░] ~71%
+Progress: [██████████████████░░] ~75%
 
 Phase 1: Core Authentication        [██████████] 5/5 plans complete
 Phase 2: Organization Bridge        [██████████] 3/3 plans complete
 Phase 3: Organization Management    [██████████] 4/4 plans complete
 Phase 4: Team Management            [██████████] 4/4 plans complete
-Phase 5: Role-Based Access Control  [██░░░░░░░░] 1/6 plans complete
+Phase 5: Role-Based Access Control  [████░░░░░░] 2/6 plans complete
 Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 ```
 
@@ -41,7 +41,7 @@ Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 
 | Metric | Value | Target | Status |
 |--------|-------|--------|--------|
-| Plans Completed | 17 total (5 Phase 1, 3 Phase 2, 4 Phase 3, 4 Phase 4, 1 Phase 5) | - | On Track |
+| Plans Completed | 18 total (5 Phase 1, 3 Phase 2, 4 Phase 3, 4 Phase 4, 2 Phase 5) | - | On Track |
 | Phases Completed | 4/6 (Phase 5 in progress) | 6/6 | On Track |
 | Requirements Complete | 13/29 | 29/29 | On Track |
 | Coverage | 100% | 100% | On Track |
@@ -96,6 +96,8 @@ Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 | 2026-01-22 | Use organizationType validator from organizationLinks for audit logs | Ensures audit logs use same type validator as organization bridge | Schema consistency across audit and organization tables |
 | 2026-01-22 | Permission matrix uses readonly arrays for type safety | TypeScript as const assertion prevents mutations, enables type inference | PERMISSIONS object is immutable at type level |
 | 2026-01-22 | requirePermission throws ConvexError with FORBIDDEN code | Consistent with existing error handling in lib/auth.ts | Structured error responses for permission denials |
+| 2026-01-22 | Use Better Auth API (getActiveMember, getSession) for org context | authComponent.getAuthUser returns only user doc, not session with activeOrganizationId | resolveUserContext uses API calls for org ID and role |
+| 2026-01-22 | Fail-safe org role defaults to 'member' on API error | Prevents privilege escalation if Better Auth API is temporarily unavailable | System remains functional, users limited to member actions until verified |
 
 ### Architecture Patterns Established
 
@@ -244,7 +246,7 @@ beforeLoad: async ({ context }) => {
 ### Phase 5 In Progress
 
 - [x] Complete 05-01-PLAN.md (RBAC Foundation)
-- [ ] Complete 05-02-PLAN.md (Protected Wrappers)
+- [x] Complete 05-02-PLAN.md (User Context and Custom Functions)
 - [ ] Complete 05-03-PLAN.md (Audit Log Mutations)
 - [ ] Complete 05-04-PLAN.md (Protected Generator/Hauler Queries)
 - [ ] Complete 05-05-PLAN.md (Protected Mutations)
@@ -276,62 +278,61 @@ beforeLoad: async ({ context }) => {
 ### Last Session Summary
 
 **Date:** 2026-01-22
-**Activity:** Executed Phase 5 Plan 01 (RBAC Foundation)
-**Outcome:** Permission matrix and audit log schema created
+**Activity:** Executed Phase 5 Plan 02 (User Context and Custom Functions)
+**Outcome:** UserContext type, resolveUserContext function, and protected function wrappers
 
 **Commits:**
-- `3db7169` - feat(05-01): create audit log schema and permission definitions
-- `3f56884` - chore(05-01): install convex-helpers for custom function wrappers
+- `575ae53` - feat(05-02): create user context resolution for RBAC
+- `320f4ea` - feat(05-02): create protected function wrappers for RBAC
 
 **Files Created:**
-- `packages/convex/convex/schema/auditLogs.ts` - Audit log table with 4 indexes
-- `packages/convex/convex/lib/permissions.ts` - PERMISSIONS matrix with utilities
-
-**Files Modified:**
-- `packages/convex/convex/schema/index.ts` - Added auditLogs export
-- `packages/convex/convex/schema.ts` - Added auditLogs to schema definition
-- `packages/convex/package.json` - Added convex-helpers dependency
+- `packages/convex/convex/lib/userContext.ts` - UserContext type and resolution functions
+- `packages/convex/convex/lib/customFunctions.ts` - protectedQuery/protectedMutation wrappers
 
 **Key Outcomes:**
-- auditLogs table schema with indexes for organization, actor, resource, event
-- PERMISSIONS object covers organization, team, generator, hauler, wasteBag resources
-- hasPermission and requirePermission type-safe utilities
-- convex-helpers installed for Plan 02 protected wrappers
+- UserContext type with org role, domain role, and entity IDs
+- resolveUserContext fetches from Better Auth API (getActiveMember, getSession)
+- requireUserContext throws UNAUTHORIZED for unauthenticated users
+- protectedQuery/protectedMutation inject ctx.user with full UserContext
+- optionalAuthQuery/optionalAuthMutation for mixed auth endpoints
+- Fail-safe: orgRole defaults to "member" if Better Auth API fails
 
 **Deviations:**
-None - plan executed exactly as written
+- [Rule 1 - Bug] Better Auth API return type mismatch: Plan assumed authUser.session would exist, but getAuthUser returns only user doc. Used auth.api.getActiveMember and getSession instead.
 
 ### Next Session Goals
 
-1. Execute 05-02-PLAN.md (Protected Wrappers)
+1. Execute 05-03-PLAN.md (Audit Log Mutations)
 2. Continue Phase 5 execution through remaining plans
-3. E2E test full auth + invitation flow with Resend configured
+3. Sync OrgRole type between permissions.ts and userContext.ts
 
 ### Context for Next Claude
 
 **What you're building:** Multi-tenant auth infrastructure for hospital waste management platform. Treaters create and manage generators (hospitals) and haulers (trucking partners) with role-based access control.
 
-**Where we are:** Phase 5 in progress. Plan 05-01 complete. Ready for 05-02 (Protected Wrappers).
+**Where we are:** Phase 5 in progress. Plans 05-01 and 05-02 complete. Ready for 05-03 (Audit Log Mutations).
 
 **What's special:** Using Better Auth organization plugin with bridge table pattern (organizationLinks) to map Better Auth's generic orgs to domain entities. PERMISSIONS matrix defines resource/action/role mappings for authorization.
 
 **Key files (Phase 5 progress):**
 - `packages/convex/convex/lib/permissions.ts` - PERMISSIONS matrix, hasPermission, requirePermission
+- `packages/convex/convex/lib/userContext.ts` - UserContext type, resolveUserContext, requireUserContext
+- `packages/convex/convex/lib/customFunctions.ts` - protectedQuery, protectedMutation wrappers
 - `packages/convex/convex/schema/auditLogs.ts` - Audit log table definition
-- `packages/convex/convex/lib/auth.ts` - Existing auth utilities (requireAuth, etc.)
 
-**Key patterns (05-01):**
-- Permission matrix: resource -> action -> OrgRole[] mapping
-- Audit log: who (actor), what (event/resource), where (org), when (timestamp)
-- requirePermission throws ConvexError with FORBIDDEN code
+**Key patterns (05-02):**
+- UserContext: userId, email, orgId, orgRole, domainRole, treaterId/generatorId/haulerId, orgType
+- protectedQuery/protectedMutation: inject ctx.user automatically via customCtx
+- Better Auth API: auth.api.getActiveMember({ headers }) for org role and ID
+- Fail-safe: orgRole defaults to "member" on API error
 
 **Key constraints:**
 - Better Auth 1.4.10 + Convex adapter 0.10.9
 - Import Convex API from @hwm/convex root (barrel export)
 - Use api.folder.index.functionName pattern
-- convex-helpers 0.1.111 available for customQuery/customMutation
+- convex-helpers 0.1.111 for customQuery/customMutation
 
 ---
 
 **State initialized:** 2026-01-21 after roadmap creation
-**Last update:** 2026-01-22 after Phase 5 Plan 01 completion
+**Last update:** 2026-01-22 after Phase 5 Plan 02 completion
