@@ -19,19 +19,19 @@
 
 ## Current Position
 
-**Phase:** Phase 4 - Team Management (4 of 6) - COMPLETE
-**Plan:** 4/4 plans complete
-**Status:** Phase 4 complete, ready for Phase 5
-**Last activity:** 2026-01-22 - Completed 04-04-PLAN.md (Team Management UI)
+**Phase:** Phase 5 - Role-Based Access Control (5 of 6)
+**Plan:** 1/6 plans complete
+**Status:** In progress
+**Last activity:** 2026-01-22 - Completed 05-01-PLAN.md (RBAC Foundation)
 
 ```
-Progress: [████████████████░░░░] ~67%
+Progress: [█████████████████░░░] ~71%
 
 Phase 1: Core Authentication        [██████████] 5/5 plans complete
 Phase 2: Organization Bridge        [██████████] 3/3 plans complete
 Phase 3: Organization Management    [██████████] 4/4 plans complete
 Phase 4: Team Management            [██████████] 4/4 plans complete
-Phase 5: Role-Based Access Control  [░░░░░░░░░░] 0/? plans
+Phase 5: Role-Based Access Control  [██░░░░░░░░] 1/6 plans complete
 Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 ```
 
@@ -41,8 +41,8 @@ Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 
 | Metric | Value | Target | Status |
 |--------|-------|--------|--------|
-| Plans Completed | 16 total (5 Phase 1, 3 Phase 2, 4 Phase 3, 4 Phase 4) | - | On Track |
-| Phases Completed | 4/6 (Phase 4 complete) | 6/6 | On Track |
+| Plans Completed | 17 total (5 Phase 1, 3 Phase 2, 4 Phase 3, 4 Phase 4, 1 Phase 5) | - | On Track |
+| Phases Completed | 4/6 (Phase 5 in progress) | 6/6 | On Track |
 | Requirements Complete | 13/29 | 29/29 | On Track |
 | Coverage | 100% | 100% | On Track |
 
@@ -93,6 +93,9 @@ Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 | 2026-01-22 | Use nullish coalescing for optional name fallback | Proper TypeScript narrowing for optional user.name field | Prevents type errors in domain user creation |
 | 2026-01-22 | Use Better Auth client API for member operations | authClient.organization.listMembers/updateMemberRole/removeMember provides direct access | No custom Convex queries needed for basic member management |
 | 2026-01-22 | Use query parameter structure for Better Auth client | Better Auth client methods use `{ query: { organizationId } }` wrapper for GET requests | Consistent pattern across listMembers, listInvitations |
+| 2026-01-22 | Use organizationType validator from organizationLinks for audit logs | Ensures audit logs use same type validator as organization bridge | Schema consistency across audit and organization tables |
+| 2026-01-22 | Permission matrix uses readonly arrays for type safety | TypeScript as const assertion prevents mutations, enables type inference | PERMISSIONS object is immutable at type level |
+| 2026-01-22 | requirePermission throws ConvexError with FORBIDDEN code | Consistent with existing error handling in lib/auth.ts | Structured error responses for permission denials |
 
 ### Architecture Patterns Established
 
@@ -238,10 +241,19 @@ beforeLoad: async ({ context }) => {
 - [ ] **USER ACTION:** Verify full auth flow end-to-end
 - [ ] **USER ACTION:** Set GENERATOR_APP_URL and TRUCKING_APP_URL for production
 
+### Phase 5 In Progress
+
+- [x] Complete 05-01-PLAN.md (RBAC Foundation)
+- [ ] Complete 05-02-PLAN.md (Protected Wrappers)
+- [ ] Complete 05-03-PLAN.md (Audit Log Mutations)
+- [ ] Complete 05-04-PLAN.md (Protected Generator/Hauler Queries)
+- [ ] Complete 05-05-PLAN.md (Protected Mutations)
+- [ ] Complete 05-06-PLAN.md (Permission UI Integration)
+
 ### Upcoming (Next Phases)
 
-- [ ] Research DENR audit logging requirements (Phase 5)
-- [ ] Define comprehensive permission matrix (Phase 5)
+- [ ] Research DENR audit logging requirements (Phase 5 - schema done, needs retention policy)
+- [x] Define comprehensive permission matrix (Phase 5) - COMPLETE in 05-01
 
 ### Research Needed
 
@@ -264,65 +276,62 @@ beforeLoad: async ({ context }) => {
 ### Last Session Summary
 
 **Date:** 2026-01-22
-**Activity:** Executed Phase 4 Plan 04 (Team Management UI)
-**Outcome:** Complete team management page with member list, invitations, and role management
+**Activity:** Executed Phase 5 Plan 01 (RBAC Foundation)
+**Outcome:** Permission matrix and audit log schema created
 
 **Commits:**
-- `3e65649` - feat(04-04): create team management components
-- `3857d0c` - feat(04-04): create team management page route
-- `da48762` - feat(04-04): add pending invitations tab
+- `3db7169` - feat(05-01): create audit log schema and permission definitions
+- `3f56884` - chore(05-01): install convex-helpers for custom function wrappers
 
 **Files Created:**
-- `apps/treater/src/routes/dashboard/team/index.tsx` - Team management page with tabs
-- `apps/treater/src/components/team/member-list.tsx` - Member list table
-- `apps/treater/src/components/team/invite-member-form.tsx` - Invite form using Convex mutation
-- `apps/treater/src/components/team/member-actions.tsx` - Role change and removal dropdown
-- `apps/treater/src/components/team/pending-invitations.tsx` - Pending invitations list
-- `apps/treater/src/components/ui/skeleton.tsx` - Loading skeleton component
-- `apps/treater/src/components/ui/tabs.tsx` - Tabs component
+- `packages/convex/convex/schema/auditLogs.ts` - Audit log table with 4 indexes
+- `packages/convex/convex/lib/permissions.ts` - PERMISSIONS matrix with utilities
 
 **Files Modified:**
-- `apps/treater/package.json` - Added sonner and date-fns dependencies
+- `packages/convex/convex/schema/index.ts` - Added auditLogs export
+- `packages/convex/convex/schema.ts` - Added auditLogs to schema definition
+- `packages/convex/package.json` - Added convex-helpers dependency
 
 **Key Outcomes:**
-- Team management page at /dashboard/team with tabbed interface
-- Member list shows name, email, role, join date with actions
-- Invite form uses inviteToTreater mutation from 04-02
-- Pending invitations tab with cancel functionality
-- Better Auth client API for member operations
+- auditLogs table schema with indexes for organization, actor, resource, event
+- PERMISSIONS object covers organization, team, generator, hauler, wasteBag resources
+- hasPermission and requirePermission type-safe utilities
+- convex-helpers installed for Plan 02 protected wrappers
 
 **Deviations:**
 None - plan executed exactly as written
 
 ### Next Session Goals
 
-1. Begin Phase 5: Role-Based Access Control planning
-2. Research DENR audit logging requirements (Phase 5 blocker)
+1. Execute 05-02-PLAN.md (Protected Wrappers)
+2. Continue Phase 5 execution through remaining plans
 3. E2E test full auth + invitation flow with Resend configured
 
 ### Context for Next Claude
 
 **What you're building:** Multi-tenant auth infrastructure for hospital waste management platform. Treaters create and manage generators (hospitals) and haulers (trucking partners) with role-based access control.
 
-**Where we are:** Phase 4 complete. All plans (04-01 through 04-04) executed. Ready for Phase 5.
+**Where we are:** Phase 5 in progress. Plan 05-01 complete. Ready for 05-02 (Protected Wrappers).
 
-**What's special:** Using Better Auth organization plugin with bridge table pattern (organizationLinks) to map Better Auth's generic orgs to domain entities. Complete invitation flow: create invitation -> send email -> accept invitation -> create domain user -> manage team.
+**What's special:** Using Better Auth organization plugin with bridge table pattern (organizationLinks) to map Better Auth's generic orgs to domain entities. PERMISSIONS matrix defines resource/action/role mappings for authorization.
 
-**Key files (Phase 4 complete):**
-- `apps/*/src/routes/accept-invitation.tsx` - Invitation acceptance routes
-- `packages/convex/convex/teams/mutations.ts` - All invitation and domain user mutations
-- `apps/treater/src/components/team/*` - Team management UI components
-- `apps/treater/src/routes/dashboard/team/index.tsx` - Team management page
+**Key files (Phase 5 progress):**
+- `packages/convex/convex/lib/permissions.ts` - PERMISSIONS matrix, hasPermission, requirePermission
+- `packages/convex/convex/schema/auditLogs.ts` - Audit log table definition
+- `packages/convex/convex/lib/auth.ts` - Existing auth utilities (requireAuth, etc.)
+
+**Key patterns (05-01):**
+- Permission matrix: resource -> action -> OrgRole[] mapping
+- Audit log: who (actor), what (event/resource), where (org), when (timestamp)
+- requirePermission throws ConvexError with FORBIDDEN code
 
 **Key constraints:**
 - Better Auth 1.4.10 + Convex adapter 0.10.9
 - Import Convex API from @hwm/convex root (barrel export)
-- Use api.teams.index.functionName pattern (not api.teams.mutations)
-- Better Auth client uses { query: { ... } } wrapper for GET methods
-- Invitation acceptance: sessionStorage token persistence across signup
-- Domain user creation: look up organizationLinks to determine role
+- Use api.folder.index.functionName pattern
+- convex-helpers 0.1.111 available for customQuery/customMutation
 
 ---
 
 **State initialized:** 2026-01-21 after roadmap creation
-**Last update:** 2026-01-22 after Phase 4 Plan 04 completion (Phase 4 complete)
+**Last update:** 2026-01-22 after Phase 5 Plan 01 completion
