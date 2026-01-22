@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { authClient } from "@/lib/auth";
+import { usePermissions } from "@/hooks/usePermissions";
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -45,6 +46,11 @@ export function MemberActions({
 }: MemberActionsProps) {
 	const [showRemoveDialog, setShowRemoveDialog] = useState(false);
 	const [isUpdating, setIsUpdating] = useState(false);
+	const { can, isLoading: permissionsLoading } = usePermissions();
+
+	// Check permissions for team management
+	const canUpdateRole = can("team", "updateRole");
+	const canRemove = can("team", "remove");
 
 	async function handleRoleChange(newRole: "admin" | "member") {
 		if (newRole === member.role) return;
@@ -93,6 +99,11 @@ export function MemberActions({
 		return <span className="text-sm text-muted-foreground">Owner</span>;
 	}
 
+	// Don't show actions if user lacks permissions or still loading
+	if (permissionsLoading || (!canUpdateRole && !canRemove)) {
+		return null;
+	}
+
 	return (
 		<>
 			<DropdownMenu>
@@ -103,29 +114,35 @@ export function MemberActions({
 					</Button>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end">
-					<DropdownMenuLabel>Change Role</DropdownMenuLabel>
-					<DropdownMenuItem
-						onClick={() => handleRoleChange("admin")}
-						disabled={member.role === "admin"}
-					>
-						<Shield className="mr-2 h-4 w-4" />
-						Make Admin
-					</DropdownMenuItem>
-					<DropdownMenuItem
-						onClick={() => handleRoleChange("member")}
-						disabled={member.role === "member"}
-					>
-						<User className="mr-2 h-4 w-4" />
-						Make Member
-					</DropdownMenuItem>
-					<DropdownMenuSeparator />
-					<DropdownMenuItem
-						onClick={() => setShowRemoveDialog(true)}
-						className="text-red-600"
-					>
-						<UserMinus className="mr-2 h-4 w-4" />
-						Remove from Team
-					</DropdownMenuItem>
+					{canUpdateRole && (
+						<>
+							<DropdownMenuLabel>Change Role</DropdownMenuLabel>
+							<DropdownMenuItem
+								onClick={() => handleRoleChange("admin")}
+								disabled={member.role === "admin"}
+							>
+								<Shield className="mr-2 h-4 w-4" />
+								Make Admin
+							</DropdownMenuItem>
+							<DropdownMenuItem
+								onClick={() => handleRoleChange("member")}
+								disabled={member.role === "member"}
+							>
+								<User className="mr-2 h-4 w-4" />
+								Make Member
+							</DropdownMenuItem>
+						</>
+					)}
+					{canUpdateRole && canRemove && <DropdownMenuSeparator />}
+					{canRemove && (
+						<DropdownMenuItem
+							onClick={() => setShowRemoveDialog(true)}
+							className="text-red-600"
+						>
+							<UserMinus className="mr-2 h-4 w-4" />
+							Remove from Team
+						</DropdownMenuItem>
+					)}
 				</DropdownMenuContent>
 			</DropdownMenu>
 
