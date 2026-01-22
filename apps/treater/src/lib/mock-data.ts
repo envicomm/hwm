@@ -35,6 +35,9 @@ export interface TreaterMockGenerator {
   lastActivityAt: number;
 }
 
+// Alias for backward compatibility with components expecting MockGenerator
+export type MockGenerator = TreaterMockGenerator;
+
 // Treater-specific mock collection request
 export interface TreaterMockCollectionRequest {
   id: string;

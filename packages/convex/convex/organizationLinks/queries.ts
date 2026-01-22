@@ -1,5 +1,6 @@
 import { query } from "../_generated/server";
 import { v } from "convex/values";
+import { requireAuth } from "../lib/auth";
 
 // Get organization link by better-auth org ID
 export const getByBetterAuthOrgId = query({
@@ -7,6 +8,8 @@ export const getByBetterAuthOrgId = query({
 		betterAuthOrgId: v.string(),
 	},
 	handler: async (ctx, args) => {
+		await requireAuth(ctx);
+
 		return await ctx.db
 			.query("organizationLinks")
 			.withIndex("by_better_auth_org", (q) =>
@@ -22,6 +25,8 @@ export const getByTreater = query({
 		treaterId: v.id("treaters"),
 	},
 	handler: async (ctx, args) => {
+		await requireAuth(ctx);
+
 		return await ctx.db
 			.query("organizationLinks")
 			.withIndex("by_treater", (q) => q.eq("treaterId", args.treaterId))
@@ -35,6 +40,8 @@ export const getByGenerator = query({
 		generatorId: v.id("generators"),
 	},
 	handler: async (ctx, args) => {
+		await requireAuth(ctx);
+
 		return await ctx.db
 			.query("organizationLinks")
 			.withIndex("by_generator", (q) => q.eq("generatorId", args.generatorId))
@@ -48,6 +55,8 @@ export const getByHauler = query({
 		haulerId: v.id("haulers"),
 	},
 	handler: async (ctx, args) => {
+		await requireAuth(ctx);
+
 		return await ctx.db
 			.query("organizationLinks")
 			.withIndex("by_hauler", (q) => q.eq("haulerId", args.haulerId))

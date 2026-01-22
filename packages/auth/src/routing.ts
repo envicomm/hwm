@@ -88,3 +88,28 @@ export function buildInvitationAcceptUrl(
 	const baseUrl = APP_URLS[env][orgType];
 	return `${baseUrl}/accept-invitation?token=${token}`;
 }
+
+// SSR-safe version that accepts port explicitly (doesn't rely on window.location)
+export function getCurrentAppOrgTypeSSR(port: string | undefined): OrganizationType {
+	switch (port) {
+		case "3001":
+			return "generator";
+		case "3002":
+			return "treater";
+		case "3003":
+			return "hauler";
+		default:
+			return "generator"; // Safe fallback
+	}
+}
+
+// Paths exempt from organization-type routing
+const ROUTING_EXEMPT_PATHS = [
+	'/auth',
+	'/accept-invitation',
+	'/api/auth',
+];
+
+export function isRoutingExemptPath(pathname: string): boolean {
+	return ROUTING_EXEMPT_PATHS.some(exempt => pathname.startsWith(exempt));
+}

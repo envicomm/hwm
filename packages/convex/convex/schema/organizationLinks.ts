@@ -22,9 +22,14 @@ export const organizationLinks = defineTable({
 	generatorId: v.optional(v.id("generators")),
 	haulerId: v.optional(v.id("haulers")),
 
+	// Parent organization hierarchy (for generators/haulers under a treater)
+	// Undefined for treaters (top-level), contains parent treater's betterAuthOrgId for child orgs
+	parentBetterAuthOrgId: v.optional(v.string()),
+
 	createdAt: v.number(),
 })
 	.index("by_better_auth_org", ["betterAuthOrgId"])
 	.index("by_treater", ["treaterId"])
 	.index("by_generator", ["generatorId"])
-	.index("by_hauler", ["haulerId"]);
+	.index("by_hauler", ["haulerId"])
+	.index("by_parent_org", ["parentBetterAuthOrgId"]);

@@ -1,5 +1,5 @@
 import { AuthView } from "@daveyplate/better-auth-ui";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import {
 	FlaskConical,
 	Shield,
@@ -11,6 +11,12 @@ import {
 } from "lucide-react";
 
 export const Route = createFileRoute("/auth/$authView")({
+	beforeLoad: async ({ context }) => {
+		// If already authenticated, redirect to dashboard
+		if (context.isAuthenticated) {
+			throw redirect({ to: "/dashboard" });
+		}
+	},
 	component: AuthPage,
 });
 
@@ -216,7 +222,7 @@ function AuthPage() {
 						className="w-full max-w-sm animate-in fade-in slide-in-from-right-4 duration-700 fill-mode-both"
 						style={{ animationDelay: "200ms" }}
 					>
-						<AuthView pathname={authView} />
+						<AuthView pathname={authView} redirectTo="/dashboard" />
 					</div>
 				</div>
 

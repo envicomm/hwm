@@ -40,3 +40,6 @@ packages/convex/convex/_generated
 # Misc
 count.txt
 todos.json
+
+# GSD Planning (intel changes constantly, can be regenerated)
+.planning/intel/

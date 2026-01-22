@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import {
   Building2,
   MapPin,
@@ -10,27 +11,32 @@ import {
   Search,
   Plus,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { convexQuery } from "@convex-dev/react-query";
+import { api } from "@hwm/convex";
+import type { Doc } from "@hwm/convex";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  mockGenerators,
-  qrModeLabels,
-  getStorageUtilization,
-  formatRelativeTime,
-  type MockGenerator,
-} from "@/lib/mock-data";
+import { PermissionGate } from "@/components/ui/permission-gate";
+import { qrModeLabels } from "@/lib/mock-data";
+import { useActiveTreater } from "@/hooks/use-active-treater";
 
 interface GeneratorCardProps {
-  generator: MockGenerator;
+  generator: Doc<"generators">;
   delay: number;
-  onViewDetails: (generator: MockGenerator) => void;
+  onViewDetails: (generator: Doc<"generators">) => void;
 }
 
 function GeneratorCard({ generator, delay, onViewDetails }: GeneratorCardProps) {
-  const utilization = getStorageUtilization(generator);
-  const isNearCapacity = utilization >= generator.storageAlertThreshold;
+  // For now, we don't have computed stats (currentStorageKg, currentBagCount)
+  // Those will come in a later phase when we add wasteBags queries
+  const storageAlertThreshold = generator.storageAlertThreshold ?? 80;
+
+  // Stub utilization until we have wasteBags data
+  const utilization = 0; // TODO: Calculate from wasteBags queries
+  const isNearCapacity = utilization >= storageAlertThreshold;
   const isCritical = utilization >= 95;
 
   return (
@@ -105,10 +111,10 @@ function GeneratorCard({ generator, delay, onViewDetails }: GeneratorCardProps) 
         </div>
         <div className="flex items-center justify-between text-[10px] text-muted-foreground">
           <span>
-            {generator.currentStorageKg.toFixed(1)} / {generator.maxStorageCapacityKg} kg
+            0 / {generator.maxStorageCapacityKg ?? "N/A"} kg
           </span>
           <span>
-            {generator.currentBagCount} / {generator.maxBagCount} bags
+            0 / {generator.maxBagCount ?? "N/A"} bags
           </span>
         </div>
       </div>
@@ -139,9 +145,9 @@ function GeneratorCard({ generator, delay, onViewDetails }: GeneratorCardProps) 
       {/* Footer */}
       <div className="flex items-center justify-between text-[10px] text-muted-foreground">
         <span>
-          {generator.pendingBags} pending | {generator.treatedBags} treated
+          0 pending | 0 treated
         </span>
-        <span>{formatRelativeTime(generator.lastActivityAt)}</span>
+        <span>Created {new Date(generator.createdAt).toLocaleDateString()}</span>
       </div>
     </GlassCard>
   );
@@ -152,10 +158,28 @@ interface GeneratorsOverviewProps {
 }
 
 export function GeneratorsOverview({ onAddGenerator }: GeneratorsOverviewProps) {
+  const navigate = useNavigate();
+  const { treaterId, isLoading: treaterLoading } = useActiveTreater();
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "active" | "inactive">("all");
 
-  const filteredGenerators = mockGenerators.filter((generator) => {
+  // Fetch generators for this treater
+  const {
+    data: generators,
+    isPending: generatorsLoading,
+    error,
+  } = useQuery({
+    ...convexQuery(api.generators.index.getByTreater, {
+      treaterId: treaterId!,
+      includeInactive: true, // Fetch all, filter client-side
+    }),
+    enabled: !!treaterId,
+  });
+
+  const isLoading = treaterLoading || generatorsLoading;
+
+  // Filter generators based on search and filter
+  const filteredGenerators = (generators ?? []).filter((generator) => {
     const matchesSearch =
       generator.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       generator.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -169,9 +193,22 @@ export function GeneratorsOverview({ onAddGenerator }: GeneratorsOverviewProps) 
     return matchesSearch && matchesFilter;
   });
 
-  const handleViewDetails = (generator: MockGenerator) => {
-    console.log("View details for:", generator.name);
+  const handleViewDetails = (generator: Doc<"generators">) => {
+    navigate({
+      to: "/dashboard/generators/$generatorId",
+      params: { generatorId: generator._id },
+    });
   };
+
+  // Show loading state
+  if (isLoading) {
+    return <GeneratorsLoadingSkeleton />;
+  }
+
+  // Show error state
+  if (error) {
+    return <GeneratorsErrorState error={error} />;
+  }
 
   return (
     <div className="space-y-4">
@@ -183,10 +220,12 @@ export function GeneratorsOverview({ onAddGenerator }: GeneratorsOverviewProps) 
             Hospitals and facilities you manage
           </p>
         </div>
-        <Button onClick={onAddGenerator} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Add Generator
-        </Button>
+        <PermissionGate resource="generator" action="create">
+          <Button onClick={onAddGenerator} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Generator
+          </Button>
+        </PermissionGate>
       </div>
 
       {/* Filters */}
@@ -219,7 +258,7 @@ export function GeneratorsOverview({ onAddGenerator }: GeneratorsOverviewProps) 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {filteredGenerators.map((generator, index) => (
           <GeneratorCard
-            key={generator.id}
+            key={generator._id}
             generator={generator}
             delay={0.05 * (index + 1)}
             onViewDetails={handleViewDetails}
@@ -236,6 +275,29 @@ export function GeneratorsOverview({ onAddGenerator }: GeneratorsOverviewProps) 
           </p>
         </div>
       )}
+    </div>
+  );
+}
+
+function GeneratorsLoadingSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="h-8 w-48 bg-muted animate-pulse rounded" />
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-64 bg-muted animate-pulse rounded-lg" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function GeneratorsErrorState({ error }: { error: Error }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-12 text-center">
+      <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+      <p className="text-sm text-muted-foreground">Failed to load generators</p>
+      <p className="text-xs text-muted-foreground mt-1">{error.message}</p>
     </div>
   );
 }

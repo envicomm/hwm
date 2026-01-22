@@ -7,6 +7,8 @@ import {
 	treaterHaulerPartners,
 	// User management
 	users,
+	// Organization bridge
+	organizationLinks,
 	// Bag inventory
 	bagInventory,
 	bagDistributions,
@@ -15,6 +17,7 @@ import {
 	wasteStatusHistory,
 	// Collection management
 	collectionRequests,
+	transportPermits,
 	// Treatment
 	treatments,
 	// Disposal
@@ -22,6 +25,8 @@ import {
 	// Certificates
 	treatmentCertificates,
 	disposalCertificates,
+	// Audit logging
+	auditLogs,
 } from "./schema/index";
 
 export default defineSchema({
@@ -34,6 +39,9 @@ export default defineSchema({
 	// User management
 	users,
 
+	// Organization bridge (Better Auth <-> Domain entities)
+	organizationLinks,
+
 	// Bag inventory
 	bagInventory,
 	bagDistributions,
@@ -44,6 +52,7 @@ export default defineSchema({
 
 	// Collection management
 	collectionRequests,
+	transportPermits,
 
 	// Treatment
 	treatments,
@@ -54,4 +63,7 @@ export default defineSchema({
 	// Certificates
 	treatmentCertificates,
 	disposalCertificates,
+
+	// Audit logging
+	auditLogs,
 });

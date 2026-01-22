@@ -1,8 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { LoginPage } from "@/components/login-page";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/")({ component: App });
-
-function App() {
-  return <LoginPage />;
-}
+export const Route = createFileRoute("/")({
+  beforeLoad: async ({ context }) => {
+    if (context.isAuthenticated) {
+      throw redirect({ to: "/dashboard" });
+    } else {
+      throw redirect({ to: "/auth/$authView", params: { authView: "sign-in" } });
+    }
+  },
+  component: () => null, // Never renders due to redirects
+});

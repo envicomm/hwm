@@ -11,28 +11,34 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { OrganizationSwitcher } from "@/components/organization-switcher";
 
 export function Header() {
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await signOut();
     navigate({ to: "/" });
   };
 
   const initials = user?.name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2) || "U";
+    ? user.name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
+    : "U";
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6">
-      <div>
-        <h1 className="text-lg font-semibold">{user?.treaterName}</h1>
-        <p className="text-xs text-muted-foreground">Treatment Facility Dashboard</p>
+      <div className="flex items-center gap-4">
+        <div>
+          <h1 className="text-lg font-semibold">Treatment Facility</h1>
+          <p className="text-xs text-muted-foreground">Treatment Facility Dashboard</p>
+        </div>
+        <OrganizationSwitcher />
       </div>
 
       <div className="flex items-center gap-2">
