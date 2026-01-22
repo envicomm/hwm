@@ -19,20 +19,20 @@
 
 ## Current Position
 
-**Phase:** Phase 5 - Role-Based Access Control (5 of 6) COMPLETE
-**Plan:** 6/6 plans complete
-**Status:** Phase Complete
-**Last activity:** 2026-01-22 - Completed 05-06-PLAN.md (Permission UI Integration)
+**Phase:** Phase 6 - Cross-App Authentication (6 of 6) IN PROGRESS
+**Plan:** 2/4 plans complete
+**Status:** In Progress
+**Last activity:** 2026-01-22 - Completed 06-02-PLAN.md (Cross-App Sign-In Verification)
 
 ```
-Progress: [██████████████████████] ~90%
+Progress: [███████████████████████] ~92%
 
 Phase 1: Core Authentication        [██████████] 5/5 plans complete
 Phase 2: Organization Bridge        [██████████] 3/3 plans complete
 Phase 3: Organization Management    [██████████] 4/4 plans complete
 Phase 4: Team Management            [██████████] 4/4 plans complete
 Phase 5: Role-Based Access Control  [██████████] 6/6 plans complete
-Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
+Phase 6: Cross-App Authentication   [█████░░░░░] 2/4 plans complete
 ```
 
 ---
@@ -41,9 +41,9 @@ Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 
 | Metric | Value | Target | Status |
 |--------|-------|--------|--------|
-| Plans Completed | 22 total (5 Phase 1, 3 Phase 2, 4 Phase 3, 4 Phase 4, 6 Phase 5) | - | On Track |
-| Phases Completed | 5/6 (Phase 5 complete) | 6/6 | On Track |
-| Requirements Complete | 25/29 | 29/29 | On Track |
+| Plans Completed | 24 total (5 Phase 1, 3 Phase 2, 4 Phase 3, 4 Phase 4, 6 Phase 5, 2 Phase 6) | - | On Track |
+| Phases Completed | 5/6 (Phase 6 in progress) | 6/6 | On Track |
+| Requirements Complete | 27/29 | 29/29 | On Track |
 | Coverage | 100% | 100% | On Track |
 
 ---
@@ -286,50 +286,45 @@ beforeLoad: async ({ context }) => {
 ### Last Session Summary
 
 **Date:** 2026-01-22
-**Activity:** Executed Phase 5 Plan 06 (Permission UI Integration)
-**Outcome:** Added usePermissions hook and PermissionGate component to all three apps with UI integrations
+**Activity:** Executed Phase 6 Plan 02 (Cross-App Sign-In Verification)
+**Outcome:** Verified auth routes and Better Auth crossDomain configuration for session sharing
 
 **Commits:**
-- `d539712` - feat(05-06): add permission gate component and hook for treater app
-- `db984b7` - feat(05-06): add permission gate component and hook for generator app
-- `9893885` - feat(05-06): add permission gate component and hook for trucking app
-- `21dd582` - feat(05-06): add permission gates to team member actions
-- `362fd6c` - feat(05-06): add permission gates to dashboard create actions
+- `bfb468b` - docs(06-02): verify generator auth routes match treater pattern
+- `9827f58` - docs(06-02): verify trucking auth routes match treater pattern
+- `d821d3c` - docs(06-02): verify cross-app session configuration
 
-**Files Created:**
-- `apps/treater/src/hooks/usePermissions.ts` - Permission hook for treater
-- `apps/treater/src/components/ui/permission-gate.tsx` - Gate component for treater
-- `apps/generator/src/hooks/usePermissions.ts` - Permission hook for generator
-- `apps/generator/src/components/ui/permission-gate.tsx` - Gate component for generator
-- `apps/trucking/src/hooks/usePermissions.ts` - Permission hook for trucking
-- `apps/trucking/src/components/ui/permission-gate.tsx` - Gate component for trucking
-
-**Files Modified:**
-- `apps/treater/src/components/team/member-actions.tsx` - Added permission checks
-- `apps/treater/src/components/dashboard/generators-overview.tsx` - Wrapped Add button
-- `apps/treater/src/components/dashboard/haulers-overview.tsx` - Added permission check
+**Files Verified:**
+- `apps/generator/src/routes/auth.$authView.tsx` - Sign-in page correct
+- `apps/generator/src/routes/index.tsx` - Auth guards correct
+- `apps/trucking/src/routes/auth.$authView.tsx` - Sign-in page correct
+- `apps/trucking/src/routes/index.tsx` - Auth guards correct
 
 **Key Outcomes:**
-- usePermissions hook provides `can()` function and role helpers (isOwner, isAdmin, isMember)
-- PermissionGate component for declarative conditional rendering
-- Team member actions hidden from member role users
-- Dashboard create buttons only visible to owner/admin
-- All three apps have permission infrastructure ready
+- All auth routes match treater pattern from Phase 4 (04-01)
+- Better Auth crossDomain plugin enabled with all three localhost ports
+- Session cookie (`better-auth.session_token`) configured for sharing
+- Documented manual testing steps for end-to-end verification
+
+**Configuration Status:**
+- trustedOrigins: localhost:3001, 3002, 3003 configured
+- crossDomain plugin: ENABLED
+- AuthView pattern: Consistent across all apps
 
 **Deviations:**
-- None - plan executed exactly as written
+- None - plan executed exactly as written (verification-only)
 
 ### Next Session Goals
 
-1. Begin Phase 6 Cross-App Authentication planning
-2. Research Better Auth crossDomain plugin setup
-3. Test authentication flow across all three apps
+1. Execute Phase 6 Plan 03 (Organization Switching - if it exists)
+2. Execute Phase 6 Plan 04 (Cross-App RBAC Verification - if it exists)
+3. Complete Phase 6 and move to next milestone
 
 ### Context for Next Claude
 
 **What you're building:** Multi-tenant auth infrastructure for hospital waste management platform. Treaters create and manage generators (hospitals) and haulers (trucking partners) with role-based access control.
 
-**Where we are:** Phase 5 (Role-Based Access Control) COMPLETE. Ready for Phase 6 (Cross-App Authentication).
+**Where we are:** Phase 6 (Cross-App Authentication) IN PROGRESS. 2/4 plans complete (Research + Sign-In Verification done).
 
 **What's special:** Using Better Auth organization plugin with bridge table pattern (organizationLinks) to map Better Auth's generic orgs to domain entities. PERMISSIONS matrix defines resource/action/role mappings for authorization. Complete RBAC implementation with:
 - Server-side: protectedMutation with permission checks and audit logging
@@ -361,4 +356,4 @@ beforeLoad: async ({ context }) => {
 ---
 
 **State initialized:** 2026-01-21 after roadmap creation
-**Last update:** 2026-01-22 after Phase 5 completion
+**Last update:** 2026-01-22 after Phase 6 Plan 2 completion
