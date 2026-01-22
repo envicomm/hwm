@@ -20,18 +20,18 @@
 ## Current Position
 
 **Phase:** Phase 5 - Role-Based Access Control (5 of 6)
-**Plan:** 2/6 plans complete
+**Plan:** 4/6 plans complete
 **Status:** In progress
-**Last activity:** 2026-01-22 - Completed 05-02-PLAN.md (User Context and Custom Functions)
+**Last activity:** 2026-01-22 - Completed 05-04-PLAN.md (Data Scoping Utilities)
 
 ```
-Progress: [██████████████████░░] ~75%
+Progress: [████████████████████░] ~81%
 
 Phase 1: Core Authentication        [██████████] 5/5 plans complete
 Phase 2: Organization Bridge        [██████████] 3/3 plans complete
 Phase 3: Organization Management    [██████████] 4/4 plans complete
 Phase 4: Team Management            [██████████] 4/4 plans complete
-Phase 5: Role-Based Access Control  [████░░░░░░] 2/6 plans complete
+Phase 5: Role-Based Access Control  [████████░░] 4/6 plans complete
 Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 ```
 
@@ -41,7 +41,7 @@ Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 
 | Metric | Value | Target | Status |
 |--------|-------|--------|--------|
-| Plans Completed | 18 total (5 Phase 1, 3 Phase 2, 4 Phase 3, 4 Phase 4, 2 Phase 5) | - | On Track |
+| Plans Completed | 20 total (5 Phase 1, 3 Phase 2, 4 Phase 3, 4 Phase 4, 4 Phase 5) | - | On Track |
 | Phases Completed | 4/6 (Phase 5 in progress) | 6/6 | On Track |
 | Requirements Complete | 13/29 | 29/29 | On Track |
 | Coverage | 100% | 100% | On Track |
@@ -98,6 +98,8 @@ Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 | 2026-01-22 | requirePermission throws ConvexError with FORBIDDEN code | Consistent with existing error handling in lib/auth.ts | Structured error responses for permission denials |
 | 2026-01-22 | Use Better Auth API (getActiveMember, getSession) for org context | authComponent.getAuthUser returns only user doc, not session with activeOrganizationId | resolveUserContext uses API calls for org ID and role |
 | 2026-01-22 | Fail-safe org role defaults to 'member' on API error | Prevents privilege escalation if Better Auth API is temporarily unavailable | System remains functional, users limited to member actions until verified |
+| 2026-01-22 | AuditEvent uses domain.action format (e.g., generator.created) | Clear categorization of audit events by domain | All audit logging follows consistent naming |
+| 2026-01-22 | Audit logger is async and awaitable | Ensures logging completes before mutation returns | All audit calls use await ctx.audit(...) |
 
 ### Architecture Patterns Established
 
@@ -247,8 +249,8 @@ beforeLoad: async ({ context }) => {
 
 - [x] Complete 05-01-PLAN.md (RBAC Foundation)
 - [x] Complete 05-02-PLAN.md (User Context and Custom Functions)
-- [ ] Complete 05-03-PLAN.md (Audit Log Mutations)
-- [ ] Complete 05-04-PLAN.md (Protected Generator/Hauler Queries)
+- [x] Complete 05-03-PLAN.md (Audit Log Mutations)
+- [x] Complete 05-04-PLAN.md (Data Scoping Utilities)
 - [ ] Complete 05-05-PLAN.md (Protected Mutations)
 - [ ] Complete 05-06-PLAN.md (Permission UI Integration)
 
@@ -278,53 +280,51 @@ beforeLoad: async ({ context }) => {
 ### Last Session Summary
 
 **Date:** 2026-01-22
-**Activity:** Executed Phase 5 Plan 02 (User Context and Custom Functions)
-**Outcome:** UserContext type, resolveUserContext function, and protected function wrappers
+**Activity:** Executed Phase 5 Plan 04 (Data Scoping Utilities)
+**Outcome:** Data scoping functions for cross-org queries based on UserContext.orgType
 
 **Commits:**
-- `575ae53` - feat(05-02): create user context resolution for RBAC
-- `320f4ea` - feat(05-02): create protected function wrappers for RBAC
+- `0b1a889` - feat(05-03): integrate audit logger into protectedMutation (included dataScoping.ts)
 
 **Files Created:**
-- `packages/convex/convex/lib/userContext.ts` - UserContext type and resolution functions
-- `packages/convex/convex/lib/customFunctions.ts` - protectedQuery/protectedMutation wrappers
+- `packages/convex/convex/lib/dataScoping.ts` - Data scoping utilities for domain-aware visibility
 
 **Key Outcomes:**
-- UserContext type with org role, domain role, and entity IDs
-- resolveUserContext fetches from Better Auth API (getActiveMember, getSession)
-- requireUserContext throws UNAUTHORIZED for unauthenticated users
-- protectedQuery/protectedMutation inject ctx.user with full UserContext
-- optionalAuthQuery/optionalAuthMutation for mixed auth endpoints
-- Fail-safe: orgRole defaults to "member" if Better Auth API fails
+- getAccessibleGenerators: Treaters see all their generators, generators see only their own, haulers get empty array
+- getAccessibleHaulers: Treaters see partnered haulers, haulers see only their own, generators get empty array
+- canAccessGenerator/canAccessHauler: Boolean access checks for specific entities
+- requireGeneratorAccess/requireHaulerAccess: Throwing guards that raise FORBIDDEN on denial
 
 **Deviations:**
-- [Rule 1 - Bug] Better Auth API return type mismatch: Plan assumed authUser.session would exist, but getAuthUser returns only user doc. Used auth.api.getActiveMember and getSession instead.
+- None - plan executed exactly as written. Note: dataScoping.ts was created alongside 05-03's audit logger work.
 
 ### Next Session Goals
 
-1. Execute 05-03-PLAN.md (Audit Log Mutations)
-2. Continue Phase 5 execution through remaining plans
-3. Sync OrgRole type between permissions.ts and userContext.ts
+1. Execute 05-05-PLAN.md (Protected Mutations)
+2. Execute 05-06-PLAN.md (Permission UI Integration)
+3. Complete Phase 5 Role-Based Access Control
 
 ### Context for Next Claude
 
 **What you're building:** Multi-tenant auth infrastructure for hospital waste management platform. Treaters create and manage generators (hospitals) and haulers (trucking partners) with role-based access control.
 
-**Where we are:** Phase 5 in progress. Plans 05-01 and 05-02 complete. Ready for 05-03 (Audit Log Mutations).
+**Where we are:** Phase 5 in progress. Plans 05-01 through 05-04 complete. Ready for 05-05 (Protected Mutations).
 
 **What's special:** Using Better Auth organization plugin with bridge table pattern (organizationLinks) to map Better Auth's generic orgs to domain entities. PERMISSIONS matrix defines resource/action/role mappings for authorization.
 
 **Key files (Phase 5 progress):**
 - `packages/convex/convex/lib/permissions.ts` - PERMISSIONS matrix, hasPermission, requirePermission
 - `packages/convex/convex/lib/userContext.ts` - UserContext type, resolveUserContext, requireUserContext
-- `packages/convex/convex/lib/customFunctions.ts` - protectedQuery, protectedMutation wrappers
+- `packages/convex/convex/lib/customFunctions.ts` - protectedQuery, protectedMutation wrappers with audit logging
+- `packages/convex/convex/lib/audit.ts` - AuditEvent types and createAuditLogger function
+- `packages/convex/convex/lib/dataScoping.ts` - getAccessibleGenerators, getAccessibleHaulers, canAccess*, require*Access
 - `packages/convex/convex/schema/auditLogs.ts` - Audit log table definition
 
-**Key patterns (05-02):**
-- UserContext: userId, email, orgId, orgRole, domainRole, treaterId/generatorId/haulerId, orgType
-- protectedQuery/protectedMutation: inject ctx.user automatically via customCtx
-- Better Auth API: auth.api.getActiveMember({ headers }) for org role and ID
-- Fail-safe: orgRole defaults to "member" on API error
+**Key patterns (05-04):**
+- Data scoping via UserContext.orgType switch statements
+- getAccessible* pattern: Returns Doc[] based on visibility rules
+- canAccess* pattern: Returns boolean for specific entity access
+- require*Access pattern: Calls canAccess*, throws FORBIDDEN on false
 
 **Key constraints:**
 - Better Auth 1.4.10 + Convex adapter 0.10.9
@@ -335,4 +335,4 @@ beforeLoad: async ({ context }) => {
 ---
 
 **State initialized:** 2026-01-21 after roadmap creation
-**Last update:** 2026-01-22 after Phase 5 Plan 02 completion
+**Last update:** 2026-01-22 after Phase 5 Plan 04 completion
