@@ -13,7 +13,9 @@ export {
 	APP_URLS,
 	getAppUrlForOrgType,
 	getCurrentAppOrgType,
+	getCurrentAppOrgTypeSSR,
 	shouldRedirectToApp,
 	buildAuthCallbackUrl,
 	buildInvitationAcceptUrl,
+	isRoutingExemptPath,
 } from "./routing";
