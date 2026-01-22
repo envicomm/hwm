@@ -20,18 +20,18 @@
 ## Current Position
 
 **Phase:** Phase 5 - Role-Based Access Control (5 of 6)
-**Plan:** 4/6 plans complete
+**Plan:** 5/6 plans complete
 **Status:** In progress
-**Last activity:** 2026-01-22 - Completed 05-04-PLAN.md (Data Scoping Utilities)
+**Last activity:** 2026-01-22 - Completed 05-05-PLAN.md (Protected Mutations)
 
 ```
-Progress: [████████████████████░] ~81%
+Progress: [█████████████████████░] ~85%
 
 Phase 1: Core Authentication        [██████████] 5/5 plans complete
 Phase 2: Organization Bridge        [██████████] 3/3 plans complete
 Phase 3: Organization Management    [██████████] 4/4 plans complete
 Phase 4: Team Management            [██████████] 4/4 plans complete
-Phase 5: Role-Based Access Control  [████████░░] 4/6 plans complete
+Phase 5: Role-Based Access Control  [█████████░] 5/6 plans complete
 Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 ```
 
@@ -41,7 +41,7 @@ Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 
 | Metric | Value | Target | Status |
 |--------|-------|--------|--------|
-| Plans Completed | 20 total (5 Phase 1, 3 Phase 2, 4 Phase 3, 4 Phase 4, 4 Phase 5) | - | On Track |
+| Plans Completed | 21 total (5 Phase 1, 3 Phase 2, 4 Phase 3, 4 Phase 4, 5 Phase 5) | - | On Track |
 | Phases Completed | 4/6 (Phase 5 in progress) | 6/6 | On Track |
 | Requirements Complete | 13/29 | 29/29 | On Track |
 | Coverage | 100% | 100% | On Track |
@@ -100,6 +100,9 @@ Phase 6: Cross-App Authentication   [░░░░░░░░░░] 0/? plans
 | 2026-01-22 | Fail-safe org role defaults to 'member' on API error | Prevents privilege escalation if Better Auth API is temporarily unavailable | System remains functional, users limited to member actions until verified |
 | 2026-01-22 | AuditEvent uses domain.action format (e.g., generator.created) | Clear categorization of audit events by domain | All audit logging follows consistent naming |
 | 2026-01-22 | Audit logger is async and awaitable | Ensures logging completes before mutation returns | All audit calls use await ctx.audit(...) |
+| 2026-01-22 | treaterId inferred from UserContext in mutations | Simplifies API, enforces only authenticated treaters can create generators/haulers | BREAKING: treaterId removed from create args |
+| 2026-01-22 | Partnership-specific audit events added | Audit completeness - partnership ops distinct from CRUD | New events: partnership_created/reactivated/removed |
+| 2026-01-22 | Permission check ordering: access first, then permission | Ensures domain boundary checked before role check | All protected mutations follow this pattern |
 
 ### Architecture Patterns Established
 
@@ -251,7 +254,7 @@ beforeLoad: async ({ context }) => {
 - [x] Complete 05-02-PLAN.md (User Context and Custom Functions)
 - [x] Complete 05-03-PLAN.md (Audit Log Mutations)
 - [x] Complete 05-04-PLAN.md (Data Scoping Utilities)
-- [ ] Complete 05-05-PLAN.md (Protected Mutations)
+- [x] Complete 05-05-PLAN.md (Protected Mutations)
 - [ ] Complete 05-06-PLAN.md (Permission UI Integration)
 
 ### Upcoming (Next Phases)
@@ -280,51 +283,58 @@ beforeLoad: async ({ context }) => {
 ### Last Session Summary
 
 **Date:** 2026-01-22
-**Activity:** Executed Phase 5 Plan 04 (Data Scoping Utilities)
-**Outcome:** Data scoping functions for cross-org queries based on UserContext.orgType
+**Activity:** Executed Phase 5 Plan 05 (Protected Mutations)
+**Outcome:** Generator and hauler mutations refactored with protectedMutation, permission checks, and audit logging
 
 **Commits:**
-- `0b1a889` - feat(05-03): integrate audit logger into protectedMutation (included dataScoping.ts)
+- `a848390` - feat(05-05): refactor generator mutations with permission checks
+- `23ee62c` - feat(05-05): refactor hauler mutations with permission checks
 
-**Files Created:**
-- `packages/convex/convex/lib/dataScoping.ts` - Data scoping utilities for domain-aware visibility
+**Files Modified:**
+- `packages/convex/convex/generators/mutations.ts` - 3 mutations refactored with protectedMutation + permissions + audit
+- `packages/convex/convex/haulers/mutations.ts` - 5 mutations refactored with protectedMutation + permissions + audit
+- `packages/convex/convex/lib/audit.ts` - Added partnership audit events
 
 **Key Outcomes:**
-- getAccessibleGenerators: Treaters see all their generators, generators see only their own, haulers get empty array
-- getAccessibleHaulers: Treaters see partnered haulers, haulers see only their own, generators get empty array
-- canAccessGenerator/canAccessHauler: Boolean access checks for specific entities
-- requireGeneratorAccess/requireHaulerAccess: Throwing guards that raise FORBIDDEN on denial
+- All generator mutations (create, update, remove) now use protectedMutation
+- All hauler mutations (create, update, remove, createPartnership, removePartnership) now use protectedMutation
+- Permission checks: owner/admin for create/update, owner only for delete
+- Domain access checks via requireGeneratorAccess/requireHaulerAccess
+- Audit logging for all sensitive operations
+- treaterId now inferred from user context (BREAKING: removed from create args)
 
 **Deviations:**
-- None - plan executed exactly as written. Note: dataScoping.ts was created alongside 05-03's audit logger work.
+- Fixed schema mismatch in plan code (serviceArea type, partnership fields)
+- Added partnership-specific audit events (partnership_created/reactivated/removed)
 
 ### Next Session Goals
 
-1. Execute 05-05-PLAN.md (Protected Mutations)
-2. Execute 05-06-PLAN.md (Permission UI Integration)
-3. Complete Phase 5 Role-Based Access Control
+1. Execute 05-06-PLAN.md (Permission UI Integration)
+2. Complete Phase 5 Role-Based Access Control
+3. Begin Phase 6 Cross-App Authentication planning
 
 ### Context for Next Claude
 
 **What you're building:** Multi-tenant auth infrastructure for hospital waste management platform. Treaters create and manage generators (hospitals) and haulers (trucking partners) with role-based access control.
 
-**Where we are:** Phase 5 in progress. Plans 05-01 through 05-04 complete. Ready for 05-05 (Protected Mutations).
+**Where we are:** Phase 5 nearly complete. Plans 05-01 through 05-05 complete. Ready for 05-06 (Permission UI Integration).
 
-**What's special:** Using Better Auth organization plugin with bridge table pattern (organizationLinks) to map Better Auth's generic orgs to domain entities. PERMISSIONS matrix defines resource/action/role mappings for authorization.
+**What's special:** Using Better Auth organization plugin with bridge table pattern (organizationLinks) to map Better Auth's generic orgs to domain entities. PERMISSIONS matrix defines resource/action/role mappings for authorization. All generator/hauler mutations now use protectedMutation with permission checks and audit logging.
 
-**Key files (Phase 5 progress):**
+**Key files (Phase 5 complete):**
 - `packages/convex/convex/lib/permissions.ts` - PERMISSIONS matrix, hasPermission, requirePermission
 - `packages/convex/convex/lib/userContext.ts` - UserContext type, resolveUserContext, requireUserContext
 - `packages/convex/convex/lib/customFunctions.ts` - protectedQuery, protectedMutation wrappers with audit logging
-- `packages/convex/convex/lib/audit.ts` - AuditEvent types and createAuditLogger function
+- `packages/convex/convex/lib/audit.ts` - AuditEvent types (including partnership events) and createAuditLogger
 - `packages/convex/convex/lib/dataScoping.ts` - getAccessibleGenerators, getAccessibleHaulers, canAccess*, require*Access
-- `packages/convex/convex/schema/auditLogs.ts` - Audit log table definition
+- `packages/convex/convex/generators/mutations.ts` - Permission-protected generator mutations
+- `packages/convex/convex/haulers/mutations.ts` - Permission-protected hauler mutations
 
-**Key patterns (05-04):**
-- Data scoping via UserContext.orgType switch statements
-- getAccessible* pattern: Returns Doc[] based on visibility rules
-- canAccess* pattern: Returns boolean for specific entity access
-- require*Access pattern: Calls canAccess*, throws FORBIDDEN on false
+**Key patterns (05-05):**
+- protectedMutation provides ctx.user (UserContext) and ctx.audit (AuditLogger)
+- Permission check ordering: access check first, then permission check
+- Org type guard at start of create mutations (treater-only)
+- Audit logging at end of successful mutation
 
 **Key constraints:**
 - Better Auth 1.4.10 + Convex adapter 0.10.9
@@ -335,4 +345,4 @@ beforeLoad: async ({ context }) => {
 ---
 
 **State initialized:** 2026-01-21 after roadmap creation
-**Last update:** 2026-01-22 after Phase 5 Plan 04 completion
+**Last update:** 2026-01-22 after Phase 5 Plan 05 completion
