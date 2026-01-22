@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { OrganizationSwitcher } from "@/components/organization-switcher";
 
 export function Header() {
   const { user, signOut } = useAuth();
@@ -32,8 +33,11 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background px-6">
-      <div>
-        <h1 className="text-lg font-semibold">Generator Portal</h1>
+      <div className="flex items-center gap-4">
+        <div>
+          <h1 className="text-lg font-semibold">Generator Portal</h1>
+        </div>
+        <OrganizationSwitcher />
       </div>
 
       <DropdownMenu>

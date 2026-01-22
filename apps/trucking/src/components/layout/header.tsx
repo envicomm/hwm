@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Bell, ChevronDown, LogOut, Settings, User } from "lucide-react";
+import { OrganizationSwitcher } from "@/components/organization-switcher";
 
 export function Header() {
   const { user, signOut } = useAuth();
@@ -33,7 +34,7 @@ export function Header() {
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/50 bg-background/80 backdrop-blur-sm px-6">
       {/* Left - Organization */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
         <div>
           <h1 className="text-sm font-semibold text-foreground">
             Fleet Management
@@ -42,6 +43,7 @@ export function Header() {
             Operations Dashboard
           </p>
         </div>
+        <OrganizationSwitcher />
       </div>
 
       {/* Right - Actions */}
