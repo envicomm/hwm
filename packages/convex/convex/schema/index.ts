@@ -6,6 +6,7 @@ export { treaters } from "./treaters";
 export { generators } from "./generators";
 export { haulers } from "./haulers";
 export { treaterHaulerPartners } from "./treaterHaulerPartners";
+export { organizationLinks } from "./organizationLinks";
 
 // User management
 export { users } from "./users";

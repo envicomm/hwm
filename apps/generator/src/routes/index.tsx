@@ -3,7 +3,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuth } from "@/contexts/auth-context";
+import { useSession, signIn } from "@/lib/auth-client";
 import {
   Recycle,
   Shield,
@@ -27,8 +27,10 @@ function LandingPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { login, isAuthenticated } = useAuth();
+  const { data: session } = useSession();
   const navigate = useNavigate();
+
+  const isAuthenticated = !!session;
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -42,8 +44,10 @@ function LandingPage() {
 
     setIsLoading(true);
     try {
-      await login(email, password);
+      await signIn.email({ email, password });
       navigate({ to: "/dashboard" });
+    } catch {
+      // Handle sign-in error
     } finally {
       setIsLoading(false);
     }

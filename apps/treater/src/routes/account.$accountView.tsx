@@ -1,6 +1,6 @@
 import { AccountView } from "@daveyplate/better-auth-ui";
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { getSession } from "@/lib/auth";
+import { getSession } from "@/lib/auth-client";
 import "@daveyplate/better-auth-ui/css";
 
 export const Route = createFileRoute("/account/$accountView")({

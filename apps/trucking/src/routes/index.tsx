@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuth } from "@/contexts/auth-context";
+import { signIn } from "@/lib/auth-client";
 import {
   Truck,
   Shield,
@@ -24,14 +24,19 @@ function LandingPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { login, isLoading } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = await login(email, password);
-    if (success) {
+    setIsLoading(true);
+    try {
+      await signIn.email({ email, password });
       navigate({ to: "/dashboard" });
+    } catch {
+      // Handle sign-in error
+    } finally {
+      setIsLoading(false);
     }
   };
 
